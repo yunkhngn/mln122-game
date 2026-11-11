@@ -187,3 +187,4 @@ img32.save(
     append_images=[img16, img48, img64]
 )
 print("Generated favicon.ico")
+
