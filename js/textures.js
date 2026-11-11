@@ -400,5 +400,152 @@ const TX = (() => {
     return t;
   }
 
-  return { get, sign, flag, soft, hash, paper, leafCard, grime, redrawSigns };
+
+  // ---- Khóm lúa (alpha): lá mảnh cong, sáng dần lên ngọn; vẽ màu nhạt để tô (tint) xanh hoặc vàng ----
+  function riceCard(ripe) {
+    const k = "rice" + ripe;
+    if (cache[k]) return cache[k];
+    const W = 128, H = 256, c = canvas(W, H), x = c.getContext("2d");
+    for (let i = 0; i < 46; i++) {
+      const r = hash(i, 1, 41), r2 = hash(i, 2, 41), lean = (r - 0.5) * 1.5, len = H * (0.55 + 0.42 * r2);
+      const x0 = W / 2 + (hash(i, 3, 41) - 0.5) * 14, tipx = x0 + lean * W * 0.45, tipy = H - len;
+      const g = x.createLinearGradient(0, H, 0, tipy);
+      const b = 0.72 + 0.28 * hash(i, 4, 41);
+      g.addColorStop(0, "rgba(" + Math.round(150 * b) + "," + Math.round(170 * b) + "," + Math.round(110 * b) + ",1)");
+      g.addColorStop(1, "rgba(" + Math.round(235 * b) + "," + Math.round(245 * b) + "," + Math.round(190 * b) + ",1)");
+      x.strokeStyle = g; x.lineWidth = 2.6 - r * 1.2; x.lineCap = "round";
+      x.beginPath(); x.moveTo(x0, H); x.quadraticCurveTo(x0 + lean * 10, H - len * 0.6, tipx, tipy); x.stroke();
+    }
+    if (ripe) for (let i = 0; i < 9; i++) { // bông lúa trĩu hạt
+      let px = W / 2 + (hash(i, 5, 42) - 0.5) * 50, py = H * (0.12 + 0.12 * hash(i, 6, 42)); const dir = hash(i, 7, 42) > 0.5 ? 1 : -1;
+      for (let j = 0; j < 14; j++) { x.fillStyle = "rgba(255,246,200," + (0.85 - j * 0.03) + ")"; x.beginPath(); x.ellipse(px, py, 2.4, 3.6, dir * 0.6, 0, 6.28); x.fill(); px += dir * (1.4 + j * 0.25); py += 3 + j * 0.2; }
+    }
+    const t = tex(c, true, false);
+    return (cache[k] = t);
+  }
+  // ---- Lá chuối (alpha): phiến dài, gân giữa, gân xiên, mép rách ----
+  function bananaLeaf() {
+    if (cache.banana) return cache.banana;
+    const W = 128, H = 512, c = canvas(W, H), x = c.getContext("2d");
+    x.beginPath(); x.moveTo(W / 2, H);
+    for (let i = 0; i <= 20; i++) { const t = i / 20, w = Math.sin(Math.PI * Math.min(1, t * 1.05)) * W * 0.47; x.lineTo(W / 2 + w, H - t * H); }
+    for (let i = 20; i >= 0; i--) { const t = i / 20, w = Math.sin(Math.PI * Math.min(1, t * 1.05)) * W * 0.47; x.lineTo(W / 2 - w, H - t * H); }
+    x.closePath();
+    const g = x.createLinearGradient(0, 0, W, 0); g.addColorStop(0, "#5a8a2a"); g.addColorStop(0.5, "#7aae3a"); g.addColorStop(1, "#4e7e24");
+    x.fillStyle = g; x.fill();
+    x.strokeStyle = "rgba(30,60,10,.35)"; x.lineWidth = 1;
+    for (let yy = H - 20; yy > 20; yy -= 7) for (const s of [-1, 1]) { x.beginPath(); x.moveTo(W / 2, yy); x.lineTo(W / 2 + s * W * 0.48, yy - 26); x.stroke(); }
+    x.fillStyle = "#c8d89a"; x.fillRect(W / 2 - 2.5, 0, 5, H); // gân giữa
+    x.globalCompositeOperation = "destination-out"; // vết rách do gió
+    for (let i = 0; i < 14; i++) { const yy = 40 + hash(i, 1, 51) * (H - 80), s = hash(i, 2, 51) > 0.5 ? 1 : -1; x.beginPath(); x.moveTo(W / 2 + s * 8, yy); x.lineTo(W / 2 + s * W * 0.5, yy - 24); x.lineTo(W / 2 + s * W * 0.5, yy - 21); x.lineTo(W / 2 + s * 9, yy + 2); x.fill(); }
+    x.globalCompositeOperation = "source-over";
+    const t = tex(c, true, false);
+    return (cache.banana = t);
+  }
+  // ---- Nón lá: vòng lá xếp lớp (theo chiều cao) + nan tre (theo vòng) ----
+  function nonLa() {
+    if (cache.non) return cache.non;
+    const W = 256, H = 128, c = canvas(W, H), x = c.getContext("2d");
+    const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#e9dcae"); g.addColorStop(1, "#cdb57a");
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    for (let i = 0; i < 400; i++) { x.fillStyle = "rgba(120,90,40," + (0.04 + hash(i, 1, 61) * 0.06) + ")"; x.fillRect(hash(i, 2, 61) * W, hash(i, 3, 61) * H, 1, 3 + hash(i, 4, 61) * 9); }
+    for (let yy = 6; yy < H; yy += 9) { x.fillStyle = "rgba(110,80,35,.35)"; x.fillRect(0, yy, W, 1.5); x.fillStyle = "rgba(255,250,225,.35)"; x.fillRect(0, yy + 2, W, 1); }
+    for (let i = 0; i < 32; i++) { x.fillStyle = "rgba(120,90,45,.16)"; x.fillRect((i / 32) * W, 0, 1.5, H); }
+    const t = tex(c, true, false);
+    return (cache.non = t);
+  }
+
+
+  // ---- Mặt tiền nhà nền (lặp được): 2 tầng × 2 gian, cửa sổ kính/chớp, chuồng cọp, cục nóng, gờ ban công, vệt mưa ----
+  function facade() {
+    if (cache.facade) return cache.facade;
+    const S2 = 512, c = canvas(S2), x = c.getContext("2d"), C = S2 / 2;
+    x.fillStyle = "#dcd4c2"; x.fillRect(0, 0, S2, S2);
+    for (let i = 0; i < 2500; i++) { x.fillStyle = "rgba(90,80,60," + hash(i, 1, 71) * 0.06 + ")"; x.fillRect(hash(i, 2, 71) * S2, hash(i, 3, 71) * S2, 2, 2); }
+    for (let cy = 0; cy < 2; cy++) for (let cx = 0; cx < 2; cx++) {
+      const ox = cx * C, oy = cy * C, kind = (cx + cy * 2) % 4;
+      x.fillStyle = "#b8b2a4"; x.fillRect(ox, oy + C - 18, C, 18);            // gờ ban công / sàn
+      x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(ox, oy + C - 2, C, 4);
+      const wx = ox + 64, wy = oy + 40, ww = 128, wh = 150;
+      if (kind == 3) { // cửa chớp gỗ xanh
+        x.fillStyle = "#3f6a52"; x.fillRect(wx, wy, ww, wh);
+        x.fillStyle = "rgba(0,0,0,.25)"; for (let yy = wy + 6; yy < wy + wh; yy += 10) x.fillRect(wx + 4, yy, ww - 8, 3);
+        x.fillStyle = "#2a3e30"; x.fillRect(wx + ww / 2 - 2, wy, 4, wh);
+      } else {
+        const g = x.createLinearGradient(0, wy, 0, wy + wh); g.addColorStop(0, "#5c6e7c"); g.addColorStop(1, "#2a333c");
+        x.fillStyle = g; x.fillRect(wx, wy, ww, wh);
+        x.fillStyle = "rgba(220,235,245,.25)"; x.fillRect(wx + 8, wy + 8, 30, wh - 16);
+        x.strokeStyle = "#ece6da"; x.lineWidth = 6; x.strokeRect(wx, wy, ww, wh); x.beginPath(); x.moveTo(wx + ww / 2, wy); x.lineTo(wx + ww / 2, wy + wh); x.stroke();
+      }
+      if (kind == 1 || kind == 2) { // chuồng cọp
+        x.strokeStyle = "rgba(30,32,34,.9)"; x.lineWidth = 3;
+        for (let bx = wx - 10; bx <= wx + ww + 10; bx += 12) { x.beginPath(); x.moveTo(bx, wy - 12); x.lineTo(bx, wy + wh + 8); x.stroke(); }
+        x.strokeRect(wx - 10, wy - 12, ww + 20, wh + 20); x.beginPath(); x.moveTo(wx - 10, wy + wh / 2); x.lineTo(wx + ww + 10, wy + wh / 2); x.stroke();
+      }
+      if (kind != 3) { x.fillStyle = "#e8e6e0"; x.fillRect(ox + 198, oy + 26, 46, 30); x.fillStyle = "#6a6a66"; x.beginPath(); x.arc(ox + 221, oy + 41, 10, 0, 6.28); x.fill(); } // cục nóng điều hòa
+    }
+    for (let i = 0; i < 40; i++) { // vệt mưa chảy
+      const sx = hash(i, 4, 71) * S2, sy = hash(i, 5, 71) * S2, len = 60 + hash(i, 6, 71) * 160, g = x.createLinearGradient(0, sy, 0, sy + len);
+      g.addColorStop(0, "rgba(60,50,35,.22)"); g.addColorStop(1, "rgba(60,50,35,0)"); x.fillStyle = g; x.fillRect(sx, sy, 3 + hash(i, 7, 71) * 8, len);
+    }
+    const t = tex(c, true, true);
+    return (cache.facade = { map: t });
+  }
+  // ---- Vân vỏ hoa quả / rau (đốm nhỏ, dùng chung với màu đỉnh) ----
+  function speckle() {
+    if (cache.speckle) return cache.speckle;
+    const c = canvas(128), x = c.getContext("2d");
+    x.fillStyle = "#f2f2f2"; x.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 900; i++) { const v = 170 + Math.round(hash(i, 1, 81) * 80); x.fillStyle = "rgb(" + v + "," + v + "," + v + ")"; x.fillRect(hash(i, 2, 81) * 128, hash(i, 3, 81) * 128, 1 + hash(i, 4, 81) * 2, 1 + hash(i, 5, 81) * 2); }
+    const t = tex(c, true, true);
+    return (cache.speckle = t);
+  }
+  // ---- Tem lơ lửng trên đầu NPC: số La Mã trên giấy; học xong => dấu đỏ "ĐÃ HỌC" ----
+  function marker(roman, done) {
+    const k = "mk" + roman + done;
+    if (cache[k]) return cache[k];
+    const c = canvas(128), x = c.getContext("2d");
+    const draw = () => {
+      x.clearRect(0, 0, 128, 128);
+      x.fillStyle = "#efe3c4"; x.beginPath(); x.arc(64, 64, 54, 0, 6.28); x.fill();
+      x.strokeStyle = "#3b2b1d"; x.lineWidth = 3; x.beginPath(); x.arc(64, 64, 54, 0, 6.28); x.stroke();
+      x.setLineDash([4, 4]); x.lineWidth = 1.5; x.beginPath(); x.arc(64, 64, 46, 0, 6.28); x.stroke(); x.setLineDash([]);
+      x.textAlign = "center"; x.textBaseline = "middle";
+      x.fillStyle = done ? "#8a7a64" : "#3b2b1d"; x.font = "700 46px " + FONT.bold; x.fillText(roman, 64, 62);
+      if (done) {
+        x.save(); x.translate(64, 64); x.rotate(-0.35);
+        x.strokeStyle = "#b03a2b"; x.lineWidth = 4; x.strokeRect(-50, -15, 100, 30);
+        x.fillStyle = "#b03a2b"; x.font = "700 20px " + FONT.bold; x.fillText("ĐÃ HỌC", 0, 1); x.restore();
+      }
+    };
+    draw();
+    const t = tex(c, true, false);
+    PAPERS.push({ draw, t });
+    return (cache[k] = t);
+  }
+  // ---- Bảng nhãn hàng tạp hóa 4×4 (tên hàng chung chung, không nhãn hiệu thật) ----
+  const GOODS = [["MÌ TÔM", "#f2c21a", "#c8231f"], ["BIA LON", "#1f7a3a", "#f2f2ea"], ["NƯỚC MẮM", "#8a3a14", "#f6e2b0"], ["DẦU ĂN", "#f0d040", "#1d4f9c"],
+    ["BỘT GIẶT", "#2a6ad0", "#ffffff"], ["SỮA ĐẶC", "#f4f0e6", "#1d4f9c"], ["BÁNH QUY", "#c8231f", "#ffe14a"], ["NƯỚC NGỌT", "#e0302a", "#ffffff"],
+    ["MUỐI", "#f4f4f0", "#2a6ad0"], ["ĐƯỜNG", "#f4ecd8", "#8a3a14"], ["CÀ PHÊ", "#3a2416", "#e8c070"], ["CHÈ", "#2a6a2a", "#f2e8c0"],
+    ["KẸO", "#e86aa8", "#ffffff"], ["XÀ PHÒNG", "#8ac8e8", "#1d3f6c"], ["NƯỚC SUỐI", "#d8ecf8", "#1d4f9c"], ["MÌ GÓI", "#e8601a", "#fff3c0"]];
+  function goods() {
+    if (cache.goods) return cache.goods;
+    const c = canvas(512), x = c.getContext("2d");
+    const draw = () => GOODS.forEach(([name, bg, fg], i) => {
+      const ox = (i % 4) * 128, oy = Math.floor(i / 4) * 128;
+      x.fillStyle = bg; x.fillRect(ox, oy, 128, 128);
+      x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(ox, oy + 8, 128, 14);
+      x.fillStyle = fg; x.fillRect(ox + 10, oy + 40, 108, 3); x.fillRect(ox + 10, oy + 90, 108, 3);
+      x.textAlign = "center"; x.textBaseline = "middle"; x.font = "700 22px " + FONT.bold;
+      let sz = 22; while (x.measureText(name).width > 112 && sz > 10) { sz -= 2; x.font = "700 " + sz + "px " + FONT.bold; }
+      x.fillText(name, ox + 64, oy + 66);
+      x.font = "600 10px " + FONT.round; x.fillText("Hàng Việt", ox + 64, oy + 108);
+    });
+    draw();
+    const t = tex(c, true, false);
+    PAPERS.push({ draw, t });
+    return (cache.goods = t);
+  }
+
+  return { get, sign, flag, soft, hash, paper, leafCard, grime, redrawSigns, riceCard, bananaLeaf, nonLa, facade, speckle, marker, goods };
 })();

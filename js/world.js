@@ -40,7 +40,8 @@ const inLot = (x, z) => LOTS.some((l) => x > l[0] && x < l[1] && z > l[2] && z <
   sm(base, mat("concrete", 0x9a9890), 0, -0.02, 0, { shadow: false });
   const road = mat("asphalt", 0xb8b8b8);
   sb(EDGE * 2 + 40, 0.04, ROAD * 2, road, 0, 0.0, 0, { shadow: false });
-  sb(ROAD * 2, 0.04, EDGE * 2 + 40, road, 0, 0.0, 0, { shadow: false });
+  // trục Z chia 2 đoạn, chừa ô ngã tư (tránh 2 mặt đường trùng nhau => nhấp nháy z-fighting)
+  for (const s of [-1, 1]) sb(ROAD * 2, 0.04, EDGE + 20 - ROAD, road, 0, 0.0, s * (ROAD + EDGE + 20) / 2, { shadow: false });
   const walk = mat("sidewalk", 0xd8d4cc), curb = mat("concrete", 0xb8b4ac);
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
     // dải vỉa hè dọc Phố Chợ và Phố Văn Hóa (mỗi góc ngã tư một chữ L)
@@ -49,12 +50,14 @@ const inLot = (x, z) => LOTS.some((l) => x > l[0] && x < l[1] && z > l[2] && z <
     sb(WALK - ROAD, SW, EDGE + 10 - WALK, walk, sx * (ROAD + WALK) / 2, SW / 2, sz * (WALK + EDGE + 10) / 2, { shadow: false });
     solidW(sx * ROAD, sz * ROAD, sx * (EDGE + 10), sz * WALK, SW);
     solidW(sx * ROAD, sz * WALK, sx * WALK, sz * (EDGE + 10), SW);
-    sb(EDGE + 10 - ROAD, SW + 0.04, 0.3, curb, sx * ax, SW / 2, sz * (ROAD + 0.15), { shadow: false });
-    sb(0.3, SW + 0.04, EDGE + 10 - ROAD, curb, sx * (ROAD + 0.15), SW / 2, sz * ax, { shadow: false });
+    // bó vỉa nhô ra 3 cm khỏi mặt vỉa hè (không trùng mặt) và 2 đoạn nối ở góc, không chồng lên nhau
+    const c0 = ROAD - 0.03, cw = 0.3, L1 = EDGE + 10 - c0, L2 = EDGE + 10 - c0 - cw;
+    sb(L1, SW + 0.04, cw, curb, sx * (c0 + L1 / 2), SW / 2, sz * (c0 + cw / 2), { shadow: false });
+    sb(cw, SW + 0.04, L2, curb, sx * (c0 + cw / 2), SW / 2, sz * (c0 + cw + L2 / 2), { shadow: false });
   }
   // vạch kẻ giữa đường + vạch đi bộ
   const paint = M(0xe8e4d8, 0.8), yel = M(0xe0b828, 0.8);
-  for (let x = WALK + 4; x < EDGE + 10; x += 6) for (const s of [-1, 1]) { sb(3, 0.01, 0.18, yel, s * x, 0.03, 0, { shadow: false }); sb(0.18, 0.01, 3, yel, 0, 0.03, s * x, { shadow: false }); }
+  for (let x = WALK + 6.5; x < EDGE + 10; x += 6) for (const s of [-1, 1]) { sb(3, 0.01, 0.18, yel, s * x, 0.03, 0, { shadow: false }); sb(0.18, 0.01, 3, yel, 0, 0.03, s * x, { shadow: false }); }
   for (const s of [-1, 1]) for (let k = -4; k <= 4; k++) {
     sb(0.7, 0.01, 3.2, paint, k * 1.3, 0.03, s * (WALK + 2.2), { shadow: false });
     sb(3.2, 0.01, 0.7, paint, s * (WALK + 2.2), 0.03, k * 1.3, { shadow: false });
@@ -149,30 +152,38 @@ function streetTree(x, z, y = SW, kind) {
   }
   // cây xanh + lan can gốc, đèn đường
   for (const s of [-1, 1]) {
-    for (let x = -EDGE + 14; x < EDGE - 6; x += rr(13, 18)) if (Math.abs(x) > WALK + 4) streetTree(x, s * (ROAD + 1.3));
-    for (let z = -EDGE + 14; z < EDGE - 6; z += rr(13, 18)) if (Math.abs(z) > WALK + 4) streetTree(s * (ROAD + 1.3), z);
+    // cây cách cột điện (mỗi 24) và đèn đường (mỗi 34, lệch 6) ít nhất 2.5 đơn vị
+    const clear = (v) => { const dp = ((v + EDGE - 4) % 24 + 24) % 24, dl = ((v + EDGE - 26) % 34 + 34) % 34; return Math.min(dp, 24 - dp) > 2.5 && Math.min(dl, 34 - dl) > 2.5; };
+    for (let x = -EDGE + 14; x < EDGE - 6; x += rr(13, 18)) if (Math.abs(x) > WALK + 4 && clear(x)) streetTree(x, s * (ROAD + 1.3));
+    for (let z = -EDGE + 14; z < EDGE - 6; z += rr(13, 18)) if (Math.abs(z) > WALK + 4 && clear(z)) streetTree(s * (ROAD + 1.3), z);
     for (let x = -EDGE + 20; x < EDGE; x += 34) if (Math.abs(x) > WALK + 4) streetLamp(x + 6, SW, s * (ROAD + 0.3), s > 0 ? Math.PI : 0);
     for (let z = -EDGE + 20; z < EDGE; z += 34) if (Math.abs(z) > WALK + 4) streetLamp(s * (ROAD + 0.3), SW, z + 6, s > 0 ? -Math.PI / 2 : Math.PI / 2);
   }
-  // trước cửa quán: xe máy dựng, ghế nhựa, bảng thực đơn, bao rác
+  // trước cửa quán – mỗi nhà một khoảng vỉa hè riêng (tọa độ cục bộ: x dọc phố, z hướng ra đường),
+  // các món không đè lên nhau: quán trà đá = bộ bàn ghế, quán phở = bảng thực đơn + dãy ghế, nhà khác = xe máy dựng
   for (const h of HOUSES) {
-    const f = h.g.front, ry = h.g.rotation.y;
+    const f = h.g.front, ry = h.g.rotation.y, hw = h.g.w / 2 - 0.5;
     const along = h.axis == "x" ? [1, 0] : [0, 1];
-    if (rand() < 0.55) for (let k = 0; k < 1 + Math.floor(rand() * 3); k++) motorbike(f.x + along[0] * (k - 1) * 1.3, SW, f.z + along[1] * (k - 1) * 1.3, ry + Math.PI + rr(-0.3, 0.3));
-    if (h.type == "pho" || h.type == "tea") {
-      for (let k = 0; k < 4; k++) stool(f.x + along[0] * rr(-2, 2) - along[1] * h.side * rr(-0.5, 1), SW, f.z + along[1] * rr(-2, 2) - along[0] * h.side * rr(-0.5, 1));
-      if (h.type == "pho") aFrame(f.x + along[0] * 2.4, SW, f.z + along[1] * 2.4, ry + 0.6, "menu", "THỰC ĐƠN");
-      if (h.type == "tea") {
-        lowTable(f.x, SW, f.z, null, ry);
-        const G = localGroup(f.x, SW, f.z, ry, true);
-        for (const s of [-1, 1]) if (rand() < 0.7) { // khách uống trà đá ngồi ghế nhựa
-          stool(s * 0.9, 0, 0, null, G);
+    const G = localGroup(f.x, SW, f.z, ry, true);
+    if (h.type == "tea") {
+      lowTable(0, 0, 0, G, 0);
+      for (const s of [-1, 1]) {
+        stool(s * 1.15, 0, 0, null, G);
+        if (rand() < 0.75) { // khách uống trà đá ngồi ghế nhựa
           const pp = randomPerson(Math.floor(rand() * 50), { pose: "sit", still: true, parent: G });
-          pp.position.set(s * 0.9, 0, 0); pp.rotation.y = s > 0 ? -Math.PI / 2 : Math.PI / 2;
+          pp.position.set(s * 1.15, 0, 0); pp.rotation.y = s > 0 ? -Math.PI / 2 : Math.PI / 2;
         }
       }
+      stool(0.2, 0, -0.95, null, G); // ghế trống chờ khách (phía trong, xa gốc cây)
+    } else if (h.type == "pho") {
+      const a = worldPoint(G, hw - 0.2, 0, 0.4);
+      aFrame(a.x, SW, a.z, ry + 0.5, "menu", "THỰC ĐƠN");
+      for (let k = 0; k < 3; k++) stool(-hw + 0.4 + k * 0.7, 0, -1.2, null, G); // ghế xếp sát tường chờ khách
+    } else if (rand() < 0.6) {
+      const n = Math.min(1 + Math.floor(rand() * 3), Math.floor((hw * 2) / 1.7));
+      for (let k = 0; k < n; k++) motorbike(-hw + 1.0 + k * 1.7, 0, -0.5, Math.PI + 0.7 + rr(-0.08, 0.08), null, G); // dựng chéo, đầu xe quay vào nhà
     }
-    if (rand() < 0.15) prop("trash", f.x + along[0] * 2.5, SW, f.z + along[1] * 2.5, rand() * 3);
+    if (rand() < 0.15) propL(G, "trash", hw + 0.3, 0, -1.3, rand() * 3); // bao rác dựng sát mép tường giáp nhà bên
   }
 }
 
@@ -180,25 +191,35 @@ function streetTree(x, z, y = SW, kind) {
 //  NỀN PHÍA SAU: mái nhà san sát + đường chân trời xa (chỉ để nhìn)
 // ============================================================
 {
-  const tops = [mat("plaster", 0xe8dcc0), mat("plaster", 0xd8d0c0), mat("plaster_y"), mat("concrete2"), mat("peel", 0xe0e0d0)];
+  // khối nhà phía sau dãy mặt phố: mặt tiền có cửa sổ/chuồng cọp/cục nóng, mái bằng có bồn nước, mái tôn, ăng-ten
+  const tints = [0xf2e6c8, 0xe4dccc, 0xf0d8a8, 0xd8e0d0, 0xe8d0c0, 0xd0d8e0];
+  const roofTop = (cx, cz, w, d, h) => {
+    sb(w - 0.1, 0.35, d - 0.1, mat("concrete", 0xb8b4ac), cx, h + 0.17, cz);                     // sân thượng (không đè sang nhà bên => không nhấp nháy)
+    if (rand() < 0.7) { const tk = new T.CylinderGeometry(0.6, 0.6, 2.0, 14); tk.rotateZ(Math.PI / 2); sm(tk, INOX, cx + rr(-w / 3, w / 3), h + 1.3, cz + rr(-d / 3, d / 3), { detail: true }); }
+    if (rand() < 0.5) sb(rr(4, 7), 0.08, rr(4, 7), mat("tin_rust", 0xc8c0b0), cx + rr(-w / 4, w / 4), h + 2.4, cz + rr(-d / 4, d / 4), { rx: 0.1 });
+    if (rand() < 0.5) { sc(0.03, 0.03, 4, RAIL, cx + rr(-w / 3, w / 3), h + 0.35, cz + rr(-d / 3, d / 3), { seg: 4, shadow: false, detail: true }); }
+  };
   for (let x = -EDGE; x < EDGE; x += 18) for (let z = -EDGE; z < EDGE; z += 18) {
     const cx = x + 9, cz = z + 9;
     if (Math.abs(cx) < WALK + 26 || Math.abs(cz) < WALK + 26 || inLot(cx, cz) || inLot(x, z) || inLot(x + 18, z + 18) || inLot(x, z + 18) || inLot(x + 18, z)) continue;
-    const h = rr(8, 22);
-    sb(18, h, 18, pickR(tops), cx, h / 2, cz);
-    if (rand() < 0.5) sb(8, 0.1, 10, mat("tin_rust", 0xc0b8a8), cx + rr(-4, 4), h + 1.2, cz, { rx: 0.1 });
-    solidW(x, z, x + 18, z + 18, h);
+    // chia lô 18×18 thành 2 nhà cao thấp khác nhau
+    for (const half of [-1, 1]) {
+      const h = Math.round(rr(2, 5)) * 5.2 + 1;
+      sb(9, h, 18, mat("facade", pickR(tints)), cx + half * 4.5, h / 2, cz);
+      roofTop(cx + half * 4.5, cz, 9, 18, h);
+    }
+    solidW(x, z, x + 18, z + 18, 30);
   }
   // chặn cuối phố bằng dãy nhà cao
   for (const [x, z, w, d] of [[EDGE + 14, 0, 20, 60], [-EDGE - 14, 0, 20, 60], [0, EDGE + 14, 60, 20], [0, -EDGE - 14, 60, 20]]) {
     const h = rr(24, 34);
-    sb(w, h, d, mat("plaster", pickR(FACADE)), x, h / 2, z);
-    for (let y = 6; y < h - 2; y += 5) sb(w + 0.2, 0.3, d + 0.2, mat("concrete2"), x, y, z);
+    sb(w, h, d, mat("facade", pickR(FACADE)), x, h / 2, z);
+    roofTop(x, z, w, d, h);
   }
   // đường chân trời xa (sương mù làm mờ)
   for (let k = 0; k < 46; k++) {
     const a = (k / 46) * 6.28, d = rr(170, 230), h = rr(18, 70), w = rr(14, 30);
-    sb(w, h, w, mat("concrete2", pickR([0xc8c4bc, 0xb8c0c8, 0xd8d0c0])), Math.cos(a) * d, h / 2, Math.sin(a) * d, { shadow: false });
+    sb(w, h, w, mat("facade", pickR([0xc8c4bc, 0xb8c0c8, 0xd8d0c0])), Math.cos(a) * d, h / 2, Math.sin(a) * d, { shadow: false });
   }
 }
 
@@ -206,7 +227,7 @@ function streetTree(x, z, y = SW, kind) {
 //  1. CHỢ (góc đông bắc): nhà lồng mái tôn, sạp hàng
 // ============================================================
 const SH = { x: 22, z: -15.5 }; // quầy thu mua lúa (logic gốc: bán lúa / mua hạt)
-const VILL_C = { x: 34, z: -32 }; // tâm vòng đi của bà bán hàng
+const VILL_C = { x: 33, z: -30, r: 13 }; // bà bán hàng đi qua lại dọc lối giữa hai hàng sạp
 {
   const x0 = 13, x1 = 52, z0 = -52, z1 = -13;
   sb(x1 - x0, 0.2, z1 - z0, mat("terrazzo", 0xd0ccc4), (x0 + x1) / 2, 0.1, (z0 + z1) / 2, { shadow: false });
@@ -228,10 +249,8 @@ const VILL_C = { x: 34, z: -32 }; // tâm vòng đi của bà bán hàng
   let k = 0;
   for (let x = x0 + 6; x < x1 - 4; x += 8) for (const z of [-24, -36, -46]) {
     const st = stalls[k++ % stalls.length];
-    stall(x, 0.2, z, (k % 2) * Math.PI, st[0], st[1], k % 3 == 0 ? [0x5a9a3a, 0x7ab84a, 0x3a7a2a] : undefined);
+    stall(x, 0.2, z, (k % 2) * Math.PI, st[0], st[1]);
   }
-  for (let k2 = 0; k2 < 10; k2++) { propL(ST, "crate", rr(x0 + 2, x1 - 2), 0.2, rr(z0 + 2, z1 - 2), rand() * 3); }
-  for (let k2 = 0; k2 < 6; k2++) propL(ST, "basket", rr(x0 + 3, x1 - 3), 0.2, rr(z0 + 3, z1 - 3), rand() * 3);
   // quầy thu mua lúa (thương nhân)
   const G = localGroup(SH.x, 0.2, SH.z, 0);
   sb(3.6, 1.2, 1.4, mat("wood", 0xb08860), 0, 0.6, 0, { p: G });
@@ -290,7 +309,7 @@ const VILL_C = { x: 34, z: -32 }; // tâm vòng đi của bà bán hàng
     sb(9, 0.08, 8, mat("terrazzo"), cx, 0.24, cz, { shadow: false });
     sb(0.2, 3.5, 8, M(0x2a4a3a, 0.8), cx - 4.6, 2.0, cz);
     prop("chalk", cx - 3.6, 0.25, cz, Math.PI / 2, 1.2);
-    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { prop("desk", cx - 1.2 + i * 2, 0.25, cz - 2.5 + j * 2.5, -Math.PI / 2); prop("schair", cx - 0.2 + i * 2, 0.25, cz - 2.5 + j * 2.5, -Math.PI / 2); }
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { prop("desk", cx - 1.35 + i * 2.1, 0.25, cz - 2.5 + j * 2.5, -Math.PI / 2); prop("schair", cx - 0.05 + i * 2.1, 0.25, cz - 2.5 + j * 2.5, -Math.PI / 2); }
     sb(9.4, 0.3, 8.4, mat("tin_rust", 0xd8d0c0), cx, 4.6, cz, { rz: 0.06 });
     for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) sb(0.15, 4.4, 0.15, RAIL, cx + a * 4.5, 2.4, cz + b * 4);
   }
@@ -317,7 +336,7 @@ const VILL_C = { x: 34, z: -32 }; // tâm vòng đi của bà bán hàng
   sb(hw, 0.6, 0.3, steel, hx, hh - 0.3, hz + hd / 2);
   sb(14, 1.6, 0.2, signMat({ title: "XƯỞNG CƠ KHÍ ĐOÀN KẾT", sub: "Gia công – Tiện – Hàn – Phay", top: "HTX SẢN XUẤT", bg: "#244a7a", bg2: "#183458", fg: "#ffffff", kind: "board", ar: 8.75 }), hx, hh - 1.6, hz + hd / 2 + 0.2);
   // máy móc
-  for (let k = 0; k < 4; k++) prop("drill", hx - 12 + k * 4, 0.2, hz - 7, 0, 1.6);
+  for (let k = 0; k < 4; k++) prop("drill", hx - 7 + k * 4, 0.2, hz - 7, 0, 1.6);
   for (let k = 0; k < 3; k++) prop("toolcart", hx - 10 + k * 7, 0.2, hz - 1, rand());
   for (let k = 0; k < 6; k++) prop("wcrate", hx + 6 + (k % 3) * 1.6, 0.2 + Math.floor(k / 3) * 0.6, hz + 4, 0);
   for (let k = 0; k < 5; k++) prop("tyre", hx - 13, 0.2 + k * 0.28, hz + 6, 0, 1, { rx: Math.PI / 2 });
@@ -475,14 +494,11 @@ let RICE = null, RICE_MAX = 0;
     sb(15, 0.06, 9.4, water, px, 0.05, pz, { shadow: false });
     for (const s of [-1, 1]) { sb(15.6, 0.35, 0.5, mat("soil"), px, 0.17, pz + s * 4.95, { shadow: false }); sb(0.5, 0.35, 10, mat("soil"), px + s * 7.75, 0.17, pz, { shadow: false }); }
   }
-  // lúa (InstancedMesh, lắc theo gió)
+  // lúa: khóm = 3 tấm lá alpha bắt chéo (InstancedMesh, lắc theo gió)
   const it = [];
-  for (let k = 0; k < 7; k++) {
-    const a = (k / 7) * 6.28, t = 0.15 + (k % 3) * 0.08, h = 1.3 + (k % 3) * 0.2;
-    it.push({ g: BG(0.06, h, 0.025), m: mtx(Math.cos(a) * 0.06, h / 2, Math.sin(a) * 0.06, Math.sin(a) * t, a, -Math.cos(a) * t) });
-  }
+  for (let k = 0; k < 3; k++) { const pg = new T.PlaneGeometry(0.75, 1.5); pg.translate(0, 0.75, 0); it.push({ g: pg, m: mtx(0, 0, 0, 0, (k / 3) * Math.PI, 0) }); }
   const g = mergeGeos(it);
-  const m = addSway(new T.MeshStandardMaterial({ color: lin(0x86b44c), roughness: 0.75, side: T.DoubleSide }), 0.05);
+  const m = addSway(new T.MeshStandardMaterial({ map: TX.riceCard(false), color: lin(0x8fc85a), alphaTest: 0.45, side: T.DoubleSide, roughness: 0.8 }), 0.05);
   const pts = [];
   for (let k = 0; k < 3; k++) for (let j = 0; j < 2; j++) for (let ix = 0; ix < 26; ix++) for (let iz = 0; iz < 15; iz++)
     pts.push([-108 + j * 17 - 7 + ix * 0.55 + (TX.hash(ix, iz, k) - 0.5) * 0.2, 36 + k * 11 - 4.3 + iz * 0.6 + (TX.hash(iz, ix, k + j) - 0.5) * 0.2, TX.hash(ix + j * 50, iz, 77 + k)]);
@@ -505,23 +521,20 @@ let RICE = null, RICE_MAX = 0;
 
 // ---------- Ruộng của người chơi (logic gốc: gieo – lớn – thu hoạch) ----------
 const plots = [];
-const CROP_GEO = (() => { // khóm lúa có bông
+const CROP_GEO = (() => { // khóm lúa: 4 tấm lá alpha bắt chéo (bông lúa vẽ sẵn, tô màu xanh / vàng)
   const it = [];
-  for (let k = 0; k < 11; k++) {
-    const a = (k / 11) * 6.28, t = 0.12 + (k % 3) * 0.1, h = 1.0 + (k % 4) * 0.08;
-    it.push({ g: BG(0.06, h, 0.025), m: mtx(Math.cos(a) * 0.08, h / 2, Math.sin(a) * 0.08, Math.sin(a) * t, 0, -Math.cos(a) * t) });
-    if (k % 2 == 0) it.push({ g: new T.SphereGeometry(0.07, 5, 4), m: mtx(Math.cos(a) * (0.1 + h * t), h + 0.05, Math.sin(a) * (0.1 + h * t), 0, 0, 0, 0.8, 2.2, 0.8) });
-  }
-  const g = mergeGeos(it); g.translate(0, -0.6, 0); return g;
+  for (let k = 0; k < 4; k++) { const pg = new T.PlaneGeometry(1.1, 1.9); pg.translate(0, 0.95 - 0.6, 0); it.push({ g: pg, m: mtx(0, 0, 0, 0, (k / 4) * Math.PI, 0) }); }
+  return mergeGeos(it);
 })();
-const CROP_GREEN = lin(0x5fae3a), CROP_RIPE = lin(0xe9c34a);
+const CROP_TEX = TX.riceCard(true);
+const CROP_GREEN = lin(0x86c050), CROP_RIPE = lin(0xf0c860);
 for (let j = 0; j < 2; j++)
   for (let i = 0; i < 3; i++) {
     const x = -72 + i * 3.2, z = 19 + j * 3.4;
     sb(2.6, 0.22, 2.6, mat("soil", 0xd8c0a8), x, 0.11, z, { shadow: false });
     for (const [sx, sz, w, d] of [[0, -1.35, 2.8, 0.2], [0, 1.35, 2.8, 0.2], [-1.35, 0, 0.2, 2.8], [1.35, 0, 0.2, 2.8]])
       sb(w, 0.3, d, mat("wood", 0x9a7a5a), x + sx, 0.15, z + sz);
-    const c = new T.Mesh(CROP_GEO, new T.MeshStandardMaterial({ color: CROP_GREEN.clone(), roughness: 0.75, side: T.DoubleSide }));
+    const c = new T.Mesh(CROP_GEO, new T.MeshStandardMaterial({ map: CROP_TEX, color: CROP_GREEN.clone(), alphaTest: 0.45, roughness: 0.8, side: T.DoubleSide }));
     c.position.set(x, 0.8, z);
     c.castShadow = true;
     c.visible = false;
@@ -535,14 +548,18 @@ for (const s of [-1, 1]) sb(0.1, 2.4, 0.1, mat("wood", 0x6a4a2a), -69 + s * 2.3,
 // ============================================================
 //  NPC HỎI ĐÁP (mỗi khu một người) + thương nhân + bà bán hàng + rương
 // ============================================================
+const ROMAN_ = ["I", "II", "III", "IV", "V", "VI"];
 function npc(id, x, z, look) {
   const g = person(Object.assign({ still: true, pose: "talk" }, look));
   g.position.set(x, SW, z);
-  const m = new T.Mesh(new T.OctahedronGeometry(0.45), new T.MeshBasicMaterial({ color: lin(0x5fe0ff), toneMapped: false }));
-  m.position.set(x, SW + 3.8, z);
+  // tem giấy lơ lửng: số La Mã của khu; học xong đổi sang tem có dấu đỏ "ĐÃ HỌC"
+  const todo = TX.marker(ROMAN_[id], false), done = TX.marker(ROMAN_[id], true);
+  const m = new T.Sprite(new T.SpriteMaterial({ map: todo, depthWrite: false }));
+  m.scale.set(1.1, 1.1, 1);
+  m.position.set(x, SW + 3.9, z);
   scene.add(m);
-  fl(m, 0.2, 2, 2);
-  npcs[id] = { x, y: SW, z, g, m };
+  fl(m, 0.12, 1.4, 0);
+  npcs[id] = { x, y: SW, z, g, m, todo, done };
 }
 // 6 nhân vật hỏi đáp (hư cấu), mỗi người một kiểu
 npc(0, -9, -77, { female: true, hair: "long", aodai: true, dress: "#3a6ab8", skin: 1, shoes: "shoe", shoeC: "#2a2420", sleeve: "long" });        // cô giáo áo dài
@@ -552,21 +569,18 @@ npc(3, 86, 8.5, { shirt: "#f4f2ee", collar: "shirt", pants: "#2a2c34", glasses: 
 npc(4, 9, 75, { shirt: "#e8e4d4", collar: "shirt", pants: "#4a4a40", hat: "coi", hatC: "#5f6a3a", hair: "buzz", hairC: "#8a8a84", shoes: "sandal", shoeC: "#2a2a2a" }); // ông cán bộ mũ cối
 npc(5, -9, 70, { shirt: "#f08a2a", print: "AN TOÀN", printC: "#fff", pants: "#2a3a5a", hat: "hard", hatC: "#f4f4f0", shoes: "shoe", shoeC: "#3a2a1a", skin: 0 }); // kỹ sư công trường
 
-const merch = person({ female: true, hair: "bun", hat: "non", shirt: "#8e4a8a", sleeve: "long", pants: "#2a2a30", apron: "#c8a040", still: true, old: true });
+const merch = person({ female: true, hair: "bun", hat: "non", shirt: "#8e4a8a", sleeve: "long", pants: "#2a2a30", apron: "#b88a38", still: true });
 merch.position.set(SH.x, 0.2, SH.z - 1.4);
 const vill = person({ female: true, hair: "bun", hat: "non", shirt: "#4a8a5a", sleeve: "long", pants: "#2a2a30", skin: 1, pose: "walk" });
 const CH = { x: -14, y: STAIR_TOP, z: 64.8 };
-const chest = new T.Group();
-{
-  const body = new T.Mesh(BG(1.2, 0.56, 0.8), mat("wood", 0xd08848, { tile: 1.2 }));
-  const lid = new T.Mesh(new T.CylinderGeometry(0.4, 0.4, 1.2, 12, 1, false, 0, Math.PI), mat("wood", 0xd08848, { tile: 1.2 }));
-  lid.rotation.z = Math.PI / 2; lid.position.y = 0.28;
-  const gold = M(0xe6b23a, 0.25, 0.95);
-  const bands = new T.Mesh(mergeGeos([{ g: BG(0.1, 0.6, 0.84), m: mtx(-0.4, 0, 0) }, { g: BG(0.1, 0.6, 0.84), m: mtx(0.4, 0, 0) }, { g: BG(0.2, 0.22, 0.06), m: mtx(0, 0.15, 0.42) }]), gold);
-  [body, lid, bands].forEach((m) => { m.castShadow = true; chest.add(m); });
-  chest.position.set(CH.x, CH.y + 0.4, CH.z);
-  scene.add(chest);
-}
+const chest = new T.Group(); // rương gỗ cũ có quai đồng (model Poly Haven), đặt yên trên sàn giàn giáo
+chest.position.set(CH.x, CH.y, CH.z); chest.rotation.y = 0.5;
+scene.add(chest);
+new T.GLTFLoader(LOADMGR).load("assets/models/wooden_crate_01/wooden_crate_01.gltf", (g) => {
+  g.scene.scale.setScalar(U * 1.25);
+  g.scene.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  chest.add(g.scene);
+});
 const hero = personBox({ shirt: "#4d6f9a" });
 shadowOnly(hero); // góc nhìn thứ nhất: người chơi vô hình nhưng vẫn có bóng
 

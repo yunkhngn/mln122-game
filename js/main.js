@@ -158,16 +158,18 @@ function loop(now) {
     P.x - merch.position.x,
     P.z - merch.position.z,
   );
-  vill.position.set(VILL_C.x + Math.cos(tt * 0.3) * 5, 0.2, VILL_C.z + Math.sin(tt * 0.3) * 5);
-  vill.rotation.y = -tt * 0.3;
+  { // đi qua lại dọc lối chợ, quay đầu ở hai đầu
+    const ph = tt * 0.09, s = Math.sin(ph);
+    vill.position.set(VILL_C.x + s * VILL_C.r, 0.2, VILL_C.z);
+    vill.rotation.y = Math.cos(ph) >= 0 ? Math.PI / 2 : -Math.PI / 2;
+  }
   for (const f of floaters) {
     f.m.position.y = f.y0 + Math.sin(tt * f.s + f.p) * f.a;
     f.m.rotation.y += dt * f.r;
   }
   npcs.forEach((n) => { if (Math.hypot(P.x - n.x, P.z - n.z) < 14) n.g.rotation.y = Math.atan2(P.x - n.x, P.z - n.z); });
   if (ibT > 0 && (ibT -= dt) <= 0) $("ib").style.opacity = 0;
-  chest.rotation.y = tt;
-  chest.position.y = CH.y + 0.5 + Math.sin(tt * 2) * 0.12;
+
   for (const p of plots) {
     if (p.s == 1) {
       p.t += dt;

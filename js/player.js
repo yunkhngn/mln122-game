@@ -27,12 +27,14 @@ addEventListener("keydown", (e) => {
     e.preventDefault();
     const n = DATA[Q.i].q.length;
     if (e.code == "Escape") closeQ();
+    else if (e.code == "KeyR" && Q.k >= n && Q.sc < n) retryQ();
     else if (e.code == "Enter" || e.code == "Space") { if (Q.k >= n) closeQ(); else if (Q.a >= 0) nextQ(); }
     else if (Q.k < n && Q.a < 0) { const j = "1234".indexOf(e.key) >= 0 ? "1234".indexOf(e.key) : "abcd".indexOf(e.key.toLowerCase()); if (j >= 0 && e.key.length == 1) pick(j); }
     return;
   }
   if (e.code == "KeyG") return toggleGfx();
   if (e.code == "KeyP") return togglePerf();
+  if (e.code == "KeyH") return $("ct").classList.toggle("off");
   if (GFX_OPEN) { if (e.code == "Escape") toggleGfx(); return; }
   keys[e.code] = 1;
   if (e.code == "Space") e.preventDefault();

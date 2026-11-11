@@ -45,6 +45,7 @@ const MDEF = {
   leaf:      { tex: "leaf",        tile: 2.5, rough: 0.8 },
   bark:      { tex: "bark",        tile: 2,   rough: 0.95 },
   metal:     { tex: "metal",       tile: 2,   rough: 0.32, metal: 0.9 },
+  facade:    { canvas: "facade",   tile: 11,  rough: 0.95, grime: 0.6 },  // mặt tiền nhà nền (cửa sổ, chuồng cọp)
 };
 // Vệt bẩn theo tọa độ thế giới (không cần UV riêng, nhà gộp vẫn đúng)
 const GRIME_TEX = TX.grime();
@@ -63,7 +64,7 @@ function addGrime(m, k) {
 function mat(name, tint = 0xffffff, opt = {}) {
   const k = name + "_" + tint + "_" + JSON.stringify(opt);
   if (_mc[k]) return _mc[k];
-  const d = MDEF[name], t = d.photo ? pbr(d.photo) : TX.get(d.tex);
+  const d = MDEF[name], t = d.photo ? pbr(d.photo) : d.canvas ? TX[d.canvas]() : TX.get(d.tex);
   const m = new T.MeshStandardMaterial({
     map: t.map, color: lin(tint),
     roughness: opt.rough ?? d.rough, metalness: opt.metal ?? d.metal ?? 0,
@@ -177,7 +178,14 @@ function mergeGeos(items, withColor) {
     pos.set(g.attributes.position.array, o * 3);
     nor.set(g.attributes.normal.array, o * 3);
     if (g.attributes.uv) uv.set(g.attributes.uv.array, o * 2);
-    if (col) for (let i = 0; i < k; i++) { col[(o + i) * 3] = c.r; col[(o + i) * 3 + 1] = c.g; col[(o + i) * 3 + 2] = c.b; }
+    if (col) {
+      const ca = !c && g.attributes.color; // không có màu riêng => giữ màu đỉnh sẵn có của hình
+      for (let i = 0; i < k; i++) {
+        if (ca) { col[(o + i) * 3] = ca.getX(i); col[(o + i) * 3 + 1] = ca.getY(i); col[(o + i) * 3 + 2] = ca.getZ(i); }
+        else if (c) { col[(o + i) * 3] = c.r; col[(o + i) * 3 + 1] = c.g; col[(o + i) * 3 + 2] = c.b; }
+        else col[(o + i) * 3] = col[(o + i) * 3 + 1] = col[(o + i) * 3 + 2] = 1;
+      }
+    }
     o += k;
     g.dispose();
   }
@@ -230,8 +238,8 @@ function finalizeStatic(chunkOf) {
     const e = o.matrixWorld.elements, ch = chunkOf(e[12], e[14]);
     const bk = o.material.userData.bk;
     const key = (bk || o.material.uuid) + "|" + ch.id + "|" + det + "|" + o.castShadow;
-    if (!buckets.has(key)) buckets.set(key, { mat: bk ? batchMat(o.material) : o.material, vc: !!bk, ch, det, cast: o.castShadow, items: [] });
-    buckets.get(key).items.push({ g: o.geometry, m: o.matrixWorld.clone(), c: o.material.color });
+    if (!buckets.has(key)) buckets.set(key, { mat: bk ? batchMat(o.material) : o.material, vc: !!bk || !!o.material.vertexColors, ch, det, cast: o.castShadow, items: [] });
+    buckets.get(key).items.push({ g: o.geometry, m: o.matrixWorld.clone(), c: bk ? o.material.color : null });
   });
   const stats = { before: 0, after: 0 };
   for (const b of buckets.values()) {

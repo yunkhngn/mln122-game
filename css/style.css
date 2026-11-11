@@ -83,21 +83,23 @@ kbd {
 .stamps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
 .tem { /* con tem có răng cưa */
   position: relative; height: 58px; display: grid; place-items: center; align-content: center; gap: 2px;
-  background: var(--paper-2);
-  -webkit-mask: radial-gradient(circle at 3px 3px, transparent 2px, #000 2.3px) -3px -3px / 6px 6px;
-          mask: radial-gradient(circle at 3px 3px, transparent 2px, #000 2.3px) -3px -3px / 6px 6px;
-  color: var(--ink-3); transition: background 200ms var(--ease), color 200ms var(--ease);
+  background: var(--paper-2); padding: 3px;
+  /* răng cưa chỉ ở mép: lõi (content-box) đặc + lưới lỗ tròn ở viền 3px */
+  -webkit-mask: linear-gradient(#000 0 0) content-box, radial-gradient(circle at 3px 3px, transparent 1.9px, #000 2.2px) -3px -3px / 6px 6px;
+          mask: linear-gradient(#000 0 0) content-box, radial-gradient(circle at 3px 3px, transparent 1.9px, #000 2.2px) -3px -3px / 6px 6px;
+  color: var(--ink-2); transition: background 200ms var(--ease), color 200ms var(--ease);
 }
-.tem::before { content: ""; position: absolute; inset: 5px; border: 1px dashed currentColor; opacity: 0.6; }
+.tem::before { content: ""; position: absolute; inset: 6px; border: 1px dashed currentColor; opacity: 0.6; }
 .tem .no { font: 700 17px/1 var(--head); }
 .tem .nm { font: 500 7.5px/1.1 var(--head); letter-spacing: 0.06em; text-transform: uppercase; text-align: center; padding: 0 4px; }
 .tem.d { background: oklch(0.95 0.03 88); color: var(--ink); }
+.tem.d .nm, .tem.d .no { transform: translate(-3px, -3px); }
 .tem.d::before { border-style: solid; }
-.tem .dau { /* dấu tròn "ĐÃ HỌC" đóng chồng lên tem */
-  position: absolute; inset: 9px 6px; display: none; place-items: center;
-  border: 2px solid var(--red); border-radius: 50%; color: var(--red);
-  font: 700 8px/1 var(--head); letter-spacing: 0.08em; transform: rotate(-18deg); opacity: 0.85;
-  background: oklch(0.5 0.17 27 / 0.06);
+.tem .dau { /* dấu bưu điện "ĐÃ HỌC" đóng lệch ở góc tem */
+  position: absolute; right: -4px; bottom: -3px; width: 30px; height: 30px; display: none; place-items: center;
+  border: 1.5px solid var(--red); border-radius: 50%; color: var(--red);
+  font: 700 6.5px/1 var(--head); letter-spacing: 0.04em; text-transform: uppercase; transform: rotate(-18deg); opacity: 0.9;
+  background: oklch(0.95 0.03 88 / 0.55);
 }
 .tem.d .dau { display: grid; }
 .tem.c { outline: 2px solid var(--blue); outline-offset: -1px; color: var(--blue); }
@@ -231,3 +233,57 @@ kbd {
   #gl { width: min(300px, 70vw); }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ============================================================
+   BẢN TIẾT CHẾ: HUD chìm xuống để nhường chỗ cho phố
+   (nhỏ hơn, không nghiêng, bóng nhẹ, hơi trong, bớt mảng đỏ đặc)
+   ============================================================ */
+:root {
+  --edge: inset 0 0 12px oklch(0.62 0.07 70 / 0.26), inset 0 0 1px oklch(0.55 0.06 65 / 0.4);
+  --lift: 0 1px 0 oklch(0.3 0.03 60 / 0.16), 0 4px 10px oklch(0.14 0.02 60 / 0.2);
+}
+#me, #mapcard, #mk, #gl, #ct { transform: none; opacity: 0.9; }
+.strip { font-size: 9.5px; padding-bottom: 4px; margin-bottom: 6px; }
+.strip .serial { font-size: 9px; }
+
+#me { width: 168px; padding: 7px 9px 7px; }
+#me .lbl { font-size: 9px; }
+#me #loc { font-size: 14px; }
+.ledger { font-size: 11.5px; gap: 1px; }
+
+#rightcol { width: 168px; gap: 8px; }
+#mapcard { padding: 7px 9px 9px; }
+#map { width: 150px; height: 150px; }
+#mk { padding: 7px 9px 8px; }
+#mk .band { margin: 0 0 6px; padding: 0 0 4px; background: none; color: var(--red); font-size: 9.5px; letter-spacing: 0.14em; border-bottom: 1px solid var(--ink-3); }
+#pr { font-size: 26px; }
+.unit { font-size: 9px; }
+.trend { width: 22px; height: 22px; font-size: 12px; border-width: 1px; }
+#sp { width: 150px; height: 32px; margin: 6px 0 4px; }
+.note { font-size: 10px; min-height: 0; }
+
+#gl { width: 236px; padding: 7px 9px 8px; }
+#v-done { font-size: 10px; }
+.stamps { gap: 4px; }
+.tem { height: 44px; }
+.tem .no { font-size: 14px; }
+.tem .nm { font-size: 6.5px; }
+.tem .dau { width: 24px; height: 24px; font-size: 5.5px; }
+.task { margin-top: 7px; font-size: 10px; }
+
+#ct { width: 210px; padding: 7px 9px; transition: opacity 400ms var(--ease); }
+#ct.off { opacity: 0; pointer-events: none; }
+.keys { font-size: 10px; gap: 3px; }
+kbd { font-size: 9px; }
+
+#hint { font-size: 12.5px; padding: 5px 12px; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); opacity: 0.94; }
+#ib { width: min(380px, 80vw); padding: 7px 10px 9px; top: 11%; }
+#ib .band { margin: -7px -10px 6px; padding: 5px 8px 4px; font-size: 10px; }
+#ib h2 { font-size: 20px; }
+#ib p { font-size: 12px; }
+#toast { font-size: 17px; border-width: 2px; }
+#vig { background: radial-gradient(ellipse at center, transparent 65%, oklch(0.3 0.04 60 / 0.2) 100%); }
+.strip { white-space: nowrap; }
+.bigstamp.fail { color: var(--ink-2); border-color: var(--ink-2); transform: rotate(4deg); }
+.go.ghost { color: var(--ink-2); border-color: var(--ink-3); margin-left: 8px; }
+.go.ghost:hover, .go.ghost:focus-visible { background: var(--ink-2); color: var(--paper); }

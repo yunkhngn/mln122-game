@@ -63,14 +63,14 @@ function buildMapBase() {
     x.beginPath(); x.moveTo(mxp(s), 0); x.lineTo(mxp(s), myp(-ROAD)); x.moveTo(mxp(s), myp(ROAD)); x.lineTo(mxp(s), H); x.stroke();
   }
   // tên phố
-  x.fillStyle = INK.ink2; x.font = "600 7px 'IBM Plex Mono', monospace"; x.textAlign = "center"; x.textBaseline = "middle";
+  x.fillStyle = INK.ink2; x.font = "600 5.5px 'IBM Plex Mono', monospace"; x.textAlign = "center"; x.textBaseline = "middle";
   x.fillText("PHỐ CHỢ", mxp(66), myp(0)); x.fillText("PHỐ CHỢ", mxp(-66), myp(0));
   for (const z of [-66, 66]) { x.save(); x.translate(mxp(0), myp(z)); x.rotate(-Math.PI / 2); x.fillText("PHỐ VĂN HÓA", 0, 0); x.restore(); }
   // ranh giới các khu chủ đề: nét đứt đỏ
   x.setLineDash([3, 2]); x.strokeStyle = "rgba(176,58,43,.7)"; x.lineWidth = 0.9;
   for (const l of LOTS) if (!(l[0] < -100 && l[2] > 0)) x.strokeRect(mxp(l[0]), myp(l[2]), (l[1] - l[0]) * k, (l[3] - l[2]) * k);
   x.setLineDash([]);
-  x.fillStyle = INK.green; x.font = "600 7px 'IBM Plex Mono', monospace"; x.fillText("RUỘNG", mxp(-88), myp(52));
+  x.fillStyle = INK.green; x.font = "600 5.5px 'IBM Plex Mono', monospace"; x.fillText("RUỘNG", mxp(-88), myp(52));
   // khung đôi + la bàn
   x.strokeStyle = INK.ink; x.lineWidth = 1.2; x.strokeRect(1, 1, W - 2, H - 2);
   x.lineWidth = 0.5; x.strokeRect(4, 4, W - 8, H - 8);
@@ -86,8 +86,7 @@ function drawMap(cur) {
   x.drawImage(MAP_BASE, 0, 0, w, h);
   x.textAlign = "center"; x.textBaseline = "middle";
   // quầy thu mua lúa
-  x.fillStyle = INK.ink; x.fillRect(mxp(SH.x) - 2.5, myp(SH.z) - 2.5, 5, 5);
-  x.font = "600 6.5px 'IBM Plex Mono', monospace"; x.fillText("THU MUA", mxp(SH.x), myp(SH.z) + 7);
+  x.fillStyle = INK.ink; x.fillRect(mxp(SH.x) - 2, myp(SH.z) - 2, 4, 4);
   // rương vàng (dấu x đỏ) khi chưa mở
   if (!S.chest) {
     const a = mxp(CH.x), b = myp(CH.z);
@@ -97,16 +96,16 @@ function drawMap(cur) {
   for (const z of ZONES) {
     const a = mxp(z.x), b = myp(z.z), done = !!S.done[z.id];
     x.fillStyle = done ? INK.red : INK.paper; x.strokeStyle = done ? INK.red : INK.ink; x.lineWidth = 1.2;
-    x.beginPath(); x.arc(a, b, 8, 0, 6.28); x.fill(); x.stroke();
-    if (z.id == cur) { x.strokeStyle = INK.blue; x.lineWidth = 1.6; x.beginPath(); x.arc(a, b, 11, 0, 6.28); x.stroke(); }
-    x.fillStyle = done ? INK.paper : INK.ink; x.font = "700 8px 'Oswald', sans-serif"; x.fillText(ROMAN[z.id], a, b + 0.5);
+    x.beginPath(); x.arc(a, b, 6.5, 0, 6.28); x.fill(); x.stroke();
+    if (z.id == cur) { x.strokeStyle = INK.blue; x.lineWidth = 1.6; x.beginPath(); x.arc(a, b, 9, 0, 6.28); x.stroke(); }
+    x.fillStyle = done ? INK.paper : INK.ink; x.font = "700 6.5px 'Oswald', sans-serif"; x.fillText(ROMAN[z.id], a, b + 0.5);
   }
   // người chơi: mũi tên mực xanh + quạt tầm nhìn
   const a = mxp(P.x), b = myp(P.z), ang = Math.atan2(-Math.sin(yaw), -Math.cos(yaw)); // hướng nhìn trên bản đồ
   x.save(); x.translate(a, b); x.rotate(ang);
-  x.fillStyle = "rgba(47,78,142,.16)"; x.beginPath(); x.moveTo(0, 0); x.arc(0, 0, 22, -0.55, 0.55); x.closePath(); x.fill();
+  x.fillStyle = "rgba(47,78,142,.16)"; x.beginPath(); x.moveTo(0, 0); x.arc(0, 0, 17, -0.55, 0.55); x.closePath(); x.fill();
   x.fillStyle = INK.blue; x.strokeStyle = INK.paper; x.lineWidth = 1;
-  x.beginPath(); x.moveTo(7, 0); x.lineTo(-4.5, 4.5); x.lineTo(-2, 0); x.lineTo(-4.5, -4.5); x.closePath(); x.fill(); x.stroke();
+  x.beginPath(); x.moveTo(5.5, 0); x.lineTo(-3.5, 3.5); x.lineTo(-1.5, 0); x.lineTo(-3.5, -3.5); x.closePath(); x.fill(); x.stroke();
   x.restore();
 }
 
@@ -131,15 +130,17 @@ function qHead(d, right) {
 function renderQ() {
   const d = DATA[Q.i], n = d.q.length;
   if (Q.k >= n) {
-    const first = !S.done[Q.i];
-    S.done[Q.i] = 1; save();
+    // chỉ được đóng dấu tem khi làm đúng hết bài kiểm tra
+    const pass = Q.sc == n, had = !!S.done[Q.i];
+    if (pass && !had) { S.done[Q.i] = 1; save(); }
     const dn = S.done.reduce((a, b) => a + (b ? 1 : 0), 0);
     qbox(qHead(d, Q.sc + "/" + n) +
-      '<p class="done-h">Hoàn thành ' + d.t + "</p>" +
-      '<p class="score">Trả lời đúng <b>' + Q.sc + " trên " + n + "</b> câu.</p>" +
-      '<span class="bigstamp">' + (first ? "Đã đóng dấu tem " + ROMAN[Q.i] : "Tem " + ROMAN[Q.i] + " đã có") + "</span>" +
+      '<p class="done-h">' + (pass ? "Đạt · " : "Chưa đạt · ") + d.t + "</p>" +
+      '<p class="score">Trả lời đúng <b>' + Q.sc + " trên " + n + "</b> câu." + (pass ? "" : " Cần đúng cả " + n + " câu mới được đóng dấu tem.") + "</p>" +
+      '<span class="bigstamp' + (pass ? "" : " fail") + '">' + (pass ? (had ? "Tem " + ROMAN[Q.i] + " đã có" : "Đã đóng dấu tem " + ROMAN[Q.i]) : "Chưa đạt") + "</span>" +
       '<p class="sm">Phiếu tem: ' + dn + "/6 khu (" + Math.round((dn / 6) * 100) + "%)" + (dn == 6 ? ". Đã đi hết sáu khu phố." : "") + "</p>" +
-      '<button class="go" onclick="closeQ()">Tiếp tục đi phố</button>');
+      (pass ? '<button class="go" onclick="closeQ()">Tiếp tục đi phố</button>'
+            : '<button class="go" onclick="retryQ()">Làm lại (R)</button> <button class="go ghost" onclick="closeQ()">Để sau</button>'));
     return;
   }
   const q = d.q[Q.k];
@@ -159,6 +160,7 @@ function pick(j) {
   $("fb").innerHTML = '<p><span class="verdict ' + (ok ? "g" : "r") + '">' + (ok ? "Đúng" : "Chưa đúng") + "</span>" + q[3] + '</p><button class="go" onclick="nextQ()">' + (Q.k + 1 >= DATA[Q.i].q.length ? "Nộp bài" : "Câu tiếp theo") + "</button>";
 }
 function nextQ() { Q.k++; Q.a = -1; renderQ(); }
+function retryQ() { Q = { i: Q.i, k: 0, sc: 0, a: -1 }; renderQ(); }
 
 function syncLockHint() { $("lock").style.display = locked() || Q || GFX_OPEN ? "none" : "flex"; }
 
@@ -205,7 +207,7 @@ function hud() {
   $("v-done").textContent = dn + "/6 · " + Math.round((dn / 6) * 100) + "%";
   TEMS.forEach((t, k) => { t.classList.toggle("d", !!S.done[k]); t.classList.toggle("c", k == cur); });
   $("task").classList.toggle("done", !!S.chest);
-  npcs.forEach((n, k) => n.m.material.color.copy(S.done[k] ? MARK_ON : MARK_OFF));
+  npcs.forEach((n, k) => { const t = S.done[k] ? n.done : n.todo; if (n.m.material.map !== t) { n.m.material.map = t; n.m.material.needsUpdate = true; } });
   drawSpark();
   drawMap(cur);
 }
@@ -231,3 +233,5 @@ let PERF_ON = false;
 function togglePerf() { PERF_ON = !PERF_ON; $("perf").style.display = PERF_ON ? "block" : "none"; }
 // Bản đồ nền dùng font web: vẽ lại khi font tải xong
 if (document.fonts) document.fonts.ready.then(() => { MAP_BASE = buildMapBase(); });
+// Bảng hướng dẫn phím tự ẩn sau 15 giây (phím H để gọi lại)
+setTimeout(() => $("ct").classList.add("off"), 15000);

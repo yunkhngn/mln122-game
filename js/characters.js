@@ -150,7 +150,12 @@ function personBox(o = {}) {
   PT(body, lath, R_BODY, new T.Matrix4().makeScale(1, 1, 0.66));
   // váy áo dài (2 tà)
   if (o.aodai) for (const s of [-1, 1]) PT(body, BG(0.26, 0.62, 0.012), "dress", mtx(0, 0.72 * H, s * 0.1));
-  if (o.apron) PT(body, BG(0.28, 0.42, 0.01), "apron", mtx(0, 0.78 * H, 0.105));
+  if (o.apron) {
+    PT(body, BG(0.18, 0.20, 0.008), "apron", mtx(0, 1.15 * H, 0.108)); // yếm ngực
+    PT(body, BG(0.30, 0.035, 0.012), "apron", mtx(0, 0.94 * H, 0.098)); // đai eo
+    PT(body, BG(0.28, 0.32, 0.008), "apron", mtx(0, 0.77 * H, 0.096)); // vạt dưới
+    PT(body, BG(0.22, 0.13, 0.012), "apron", mtx(0, 0.76 * H, 0.104)); // túi tiền
+  }
   // --- đầu ---
   const hy = 1.63 * H;
   const head = new T.SphereGeometry(0.112, 16, 12);
@@ -239,7 +244,7 @@ function personBox(o = {}) {
 const OUTFITS = [
   { shirt: "#c8231f", print: "VIỆT NAM", num: "10", printC: "#ffe14a", shorts: true },                 // áo đấu đỏ
   { shirt: "#f2f0ea", collar: "shirt", sleeve: "short", pants: "#3a3a44", shoes: "shoe", shoeC: "#2a2420" }, // sơ mi trắng
-  { shirt: "#e8e4dc", sleeve: "none", shorts: true, pants: "#3a4a6a" },                                  // áo ba lỗ + quần đùi
+  { shirt: "#e8e4dc", shorts: true, pants: "#3a4a6a" },                                                   // áo cộc trắng + quần đùi
   { shirt: "#3a6a9a", collar: "shirt", plaid: true, pants: "#2a2c34" },                                 // sơ mi ca rô
   { shirt: "#5a7a3a", hat: "coi", hatC: "#5f6a3a", pants: "#4a5a3a", hair: "buzz", hairC: "#8a8a84" }, // ông cụ mũ cối
   { shirt: "#2a2a2a", print: "SAIGON", printC: "#fff", pants: "#2a3a5a", hat: "cap", hatC: "#c8231f" },
@@ -294,10 +299,14 @@ function person(o = {}) {
   o = Object.assign({ shirt: "#c8231f", pants: "#2a2c34", hairC: "#1a1410", hatC: "#5f6a3a", shoes: "sandal", shoeC: "#3a5aa8", sleeve: "short", pose: "stand" }, o);
   for (const k of ["shirt", "pants", "hatC", "hairC", "shoeC", "dress", "apron", "printC"]) if (o[k] != null) o[k] = hexCss(o[k]);
   const G = new T.Group();
+  if (o.x != null || o.y != null || o.z != null) G.position.set(o.x || 0, o.y || 0, o.z || 0);
+  if (o.ry != null) G.rotation.y = o.ry;
   (o.parent || scene).add(G);
   const h = { G, o };
   HUMANS.push(h);
-  if (HUMAN.ready) buildHuman(h);
+  if (HUMAN.ready) {
+    queueMicrotask(() => { if (!h.root) buildHuman(h); });
+  }
   return G;
 }
 
@@ -365,24 +374,60 @@ function prepTemplate(sex) {
   };
 }
 
-// Vùng trang phục của 1 đỉnh (tư thế chữ T, đơn vị mét)
-function clothOf(bone, x, y, z, o, H) {
-  const ax = Math.abs(x);
-  if (/^Head$|neck/.test(bone)) return null;
-  if (/hand|thumb|index|middle|ring|pinky/.test(bone)) return null;
-  if (/spine|clavicle/.test(bone)) return o.sleeve == "none" && ax > 0.13 && y > H * 0.74 ? null : "shirt";
-  if (/upperarm/.test(bone)) return o.sleeve == "none" ? null : o.sleeve == "long" || ax < H * 0.19 ? "shirt" : null;
-  if (/lowerarm/.test(bone)) return o.sleeve == "long" || o.aodai ? "shirt" : null;
-  if (bone == "pelvis") return y > H * 0.53 ? "shirt" : "pants";
-  if (/thigh/.test(bone)) return o.shorts && y < H * 0.36 ? null : "pants";
-  if (/calf/.test(bone)) return o.shorts ? null : y > 0.11 ? "pants" : o.shoes == "shoe" ? "shoe" : null;
-  if (bone == "root") return y > H * 0.53 ? "shirt" : y > H * 0.3 ? "pants" : null;
-  if (/foot|ball/.test(bone)) {
-    if (o.shoes == "shoe") return "shoe";
-    if (y < 0.025) return "sole";
-    return y > 0.045 && y < 0.075 && z > 0.02 ? "strap" : null; // dép tổ ong: đế + quai
+// ---------- Vùng trang phục (tư thế chữ T, mét) ----------
+// Mỗi tam giác thuộc 1 nhóm theo xương; trong nhóm, ranh giới áo/quần/da là các mặt phẳng
+// (cổ áo, cạp quần, gấu tay, ống quần). Tam giác nằm vắt qua ranh giới được CẮT đúng theo mặt phẳng
+// => đường may thẳng, không răng cưa theo lưới.
+function groupOf(bone) {
+  if (/^Head$/.test(bone)) return "head";
+  if (/hand|thumb|index|middle|ring|pinky/.test(bone)) return "hand";
+  if (/upperarm|lowerarm/.test(bone)) return "arm";
+  if (/thigh|calf/.test(bone)) return "leg";
+  if (/foot|ball/.test(bone)) return "foot";
+  return "torso"; // spine, clavicle, neck, pelvis, root
+}
+// Cắt đa giác theo ngưỡng của 1 trục: giữ phần f(v) < t (below) hoặc >= t
+function clipPoly(poly, f, t, below) {
+  const out = [];
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length], fa = f(a) - t, fb = f(b) - t;
+    const ina = below ? fa < 0 : fa >= 0, inb = below ? fb < 0 : fb >= 0;
+    if (ina) out.push(a);
+    if (ina != inb) { const k = fa / (fa - fb); out.push({ p: a.p.map((v, j) => v + (b.p[j] - v) * k), u: a.u + (b.u - a.u) * k, v: a.v + (b.v - a.v) * k }); }
   }
-  return null;
+  return out;
+}
+// Trả về danh sách [vùng, đa giác] sau khi cắt 1 tam giác theo trang phục o
+function cutTriangle(poly, grp, o, H) {
+  const Y = (q) => q.p[1], AX = (q) => Math.abs(q.p[0]);
+  const parts = [];
+  const band = (pl, f, cuts) => { // cuts: [[ngưỡng, vùng phía dưới], ..., [Infinity, vùng trên cùng]]
+    let rest = pl;
+    for (const [t, r] of cuts) {
+      if (!rest.length) break;
+      if (t === Infinity) { if (r) parts.push([r, rest]); break; }
+      const lo = clipPoly(rest, f, t, true);
+      if (lo.length > 2 && r) parts.push([r, lo]);
+      rest = clipPoly(rest, f, t, false);
+    }
+  };
+  if (grp == "torso") {
+    // dưới cạp quần => quần; trên: áo, trừ cột hẹp quanh cổ phía trên cổ áo => da
+    const lo = clipPoly(poly, Y, H * 0.53, true), hi = clipPoly(poly, Y, H * 0.53, false);
+    if (lo.length > 2) parts.push(["pants", lo]);
+    if (hi.length > 2) {
+      const side = clipPoly(hi, AX, 0.075, false), mid = clipPoly(hi, AX, 0.075, true);
+      if (side.length > 2) parts.push(["shirt", side]);
+      if (mid.length > 2) { const m2 = clipPoly(mid, Y, H * 0.81, true); if (m2.length > 2) parts.push(["shirt", m2]); }
+    }
+  }
+  else if (grp == "arm") band(poly, AX, [[o.sleeve == "long" || o.aodai ? H * 0.38 : H * 0.185, "shirt"], [Infinity, null]]);
+  else if (grp == "leg") band(poly, Y, o.shorts ? [[H * 0.33, null], [Infinity, "pants"]] : [[0.1, o.shoes == "shoe" ? "shoe" : null], [Infinity, o.aodai ? "pants" : "pants"]]);
+  else if (grp == "foot") {
+    if (o.shoes == "shoe") parts.push(["shoe", poly]);
+    else band(poly, Y, [[0.025, "sole"], [0.045, null], [0.075, "strap"], [Infinity, null]]); // dép tổ ong: đế + quai
+  }
+  return parts;
 }
 
 // ---------- Texture quần áo (canvas 512, tô theo tam giác UV) ----------
@@ -395,18 +440,22 @@ function bodyTexture(sex, o) {
   const x = c.getContext("2d");
   x.drawImage(HUMAN.skin[skinKey], 0, 0, S, S);
   const I = HUMAN.info[sex], H = I.headTop, idx = I.index.array;
-  const paths = {}, colors = { shirt: o.aodai ? o.dress : o.shirt, pants: o.aodai ? "#f2f0ea" : o.pants, shoe: o.shoeC, sole: "#e8e4dc", strap: o.shoeC };
+  const paths = {}, colors = { shirt: o.aodai ? o.dress : o.shirt, pants: o.aodai ? "#f2f0ea" : o.pants, shoe: o.shoeC, sole: "#e8e4dc", strap: o.shoeC, apron: o.apron };
+  const vtx = (i) => ({ p: [I.pos.getX(i), I.pos.getY(i), I.pos.getZ(i)], u: I.uv.getX(i) * S, v: I.uv.getY(i) * S });
   for (let t = 0; t < idx.length; t += 3) {
     const a = idx[t], b = idx[t + 1], cc = idx[t + 2];
-    const cx = (I.pos.getX(a) + I.pos.getX(b) + I.pos.getX(cc)) / 3, cy = (I.pos.getY(a) + I.pos.getY(b) + I.pos.getY(cc)) / 3, cz = (I.pos.getZ(a) + I.pos.getZ(b) + I.pos.getZ(cc)) / 3;
-    const r = clothOf(I.bone[a], cx, cy, cz, o, H);
-    if (!r) continue;
-    const p = paths[r] || (paths[r] = new Path2D());
-    p.moveTo(I.uv.getX(a) * S, I.uv.getY(a) * S); p.lineTo(I.uv.getX(b) * S, I.uv.getY(b) * S); p.lineTo(I.uv.getX(cc) * S, I.uv.getY(cc) * S); p.closePath();
+    const grp = groupOf(I.bone[a]);
+    if (grp == "head" || grp == "hand") continue;
+    for (const [r, pl] of cutTriangle([vtx(a), vtx(b), vtx(cc)], grp, o, H)) {
+      const p = paths[r] || (paths[r] = new Path2D());
+      p.moveTo(pl[0].u, pl[0].v);
+      for (let k = 1; k < pl.length; k++) p.lineTo(pl[k].u, pl[k].v);
+      p.closePath();
+    }
   }
   for (const r of ["pants", "shirt", "shoe", "sole", "strap"]) {
     const p = paths[r]; if (!p) continue;
-    x.fillStyle = x.strokeStyle = colors[r]; x.lineWidth = 2.5; x.lineJoin = "round";
+    x.fillStyle = x.strokeStyle = colors[r]; x.lineWidth = 1.5; x.lineJoin = "round";
     x.fill(p); x.stroke(p);
     if (r == "shirt" || r == "pants") { // vải: kẻ ca rô, nếp gấp, bóng nhẹ
       x.save(); x.clip(p);
@@ -440,15 +489,17 @@ function hairMat(src, color) {
 }
 
 // ---------- Mũ / tà áo dài / tạp dề (mét, tọa độ tư thế chữ T) ----------
+const NON_MAT = new T.MeshStandardMaterial({ map: TX.nonLa(), side: T.DoubleSide, roughness: 0.85, skinning: false });
 function hatMesh(o, I) {
   const y = I.eyeY, z = I.faceZ - 0.085, hc = o.hatC, dk = shade(o.hatC, 0.75), list = [];
   if (o.hat == "coi") {
     list.push([new T.SphereGeometry(0.135, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2), hc, mtx(0, y + 0.045, z, 0, 0, 0, 1, 0.9, 1.1)]);
     list.push([cyl(0.18, 0.19, 0.012, 20), dk, mtx(0, y + 0.04, z, 0, 0, 0, 1, 1, 1.15)]);
     list.push([cyl(0.014, 0.016, 0.014, 6), dk, mtx(0, y + 0.17, z)]);
-  } else if (o.hat == "non") {
-    const cone = new T.ConeGeometry(0.27, 0.2, 20, 1, true);
-    list.push([cone, "#d8c28a", mtx(0, I.headTop + 0.04, z)]);
+  } else if (o.hat == "non") { // nón lá: texture lá + nan, 2 mặt
+    const cone = new T.ConeGeometry(0.27, 0.2, 28, 1, true);
+    const m = new T.Mesh(cone, NON_MAT); m.position.set(0, I.headTop + 0.04, z); m.castShadow = true;
+    return m;
   } else if (o.hat == "cap" || o.hat == "hard") {
     const hard = o.hat == "hard";
     list.push([new T.SphereGeometry(hard ? 0.132 : 0.122, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2), hc, mtx(0, y + 0.04, z, -0.06, 0, 0, 1, hard ? 0.95 : 0.85, 1.08)]);
@@ -460,7 +511,31 @@ function hatMesh(o, I) {
 function waistMesh(o) {
   const list = [];
   if (o.aodai) for (const s of [-1, 1]) list.push([BG(0.3, 0.6, 0.012), new T.Color(o.dress).getHex(), mtx(0, 0.68, s * 0.12)]);
-  if (o.apron) list.push([BG(0.3, 0.42, 0.01), new T.Color(o.apron).getHex(), mtx(0, 0.78, 0.13)]);
+  if (o.apron) {
+    const c = new T.Color(o.apron).getHex();
+    const trim = new T.Color(shade(o.apron, 1.35)).getHex();
+    const dark = new T.Color(shade(o.apron, 0.72)).getHex();
+    // 1. Phần yếm trước ngực (bib che ngực)
+    list.push([BG(0.20, 0.22, 0.008), c, mtx(0, 1.15, 0.108, 0.04, 0, 0)]);
+    // Viền trên của yếm ngực
+    list.push([BG(0.20, 0.015, 0.01), trim, mtx(0, 1.255, 0.112, 0.04, 0, 0)]);
+    // Quai đeo qua cổ (neck straps)
+    for (const s of [-1, 1]) list.push([BG(0.018, 0.18, 0.006), dark, mtx(s * 0.075, 1.31, 0.075, -0.25, 0, s * 0.12)]);
+    // 2. Đai thắt lưng ôm ngang eo
+    list.push([BG(0.33, 0.04, 0.014), dark, mtx(0, 0.94, 0.098)]);
+    // Dây đai 2 bên hông
+    for (const s of [-1, 1]) list.push([BG(0.012, 0.035, 0.16), dark, mtx(s * 0.16, 0.94, 0.02)]);
+    // Nơ buộc sau lưng
+    list.push([BG(0.06, 0.045, 0.02), dark, mtx(0, 0.94, -0.075)]);
+    // 3. Thân tạp dề trước (vạt dưới che đùi)
+    list.push([BG(0.32, 0.32, 0.008), c, mtx(0, 0.775, 0.096, -0.04, 0, 0)]);
+    // 4. Túi đựng tiền trước bụng (patch pocket)
+    list.push([BG(0.25, 0.14, 0.012), c, mtx(0, 0.77, 0.104, -0.04, 0, 0)]);
+    // Viền mép túi (trim viền túi)
+    list.push([BG(0.25, 0.016, 0.014), trim, mtx(0, 0.835, 0.106, -0.04, 0, 0)]);
+    // Đường may chia đôi 2 ngăn túi (ngăn tiền lẻ, tiền chẵn)
+    list.push([BG(0.008, 0.13, 0.014), dark, mtx(0, 0.77, 0.106, -0.04, 0, 0)]);
+  }
   return list.length ? colorMesh(list) : null;
 }
 // Gắn vật (tọa độ tư thế chữ T trong không gian root) vào 1 xương, giữ nguyên vị trí
@@ -507,7 +582,21 @@ function buildHuman(h) {
     h.mixer = new T.AnimationMixer(root);
     const a = h.mixer.clipAction(clip); a.play();
     h.mixer.update(Math.random() * clip.duration);
+    if (o.pose == "sit" || o.pose == "eat") seatOnStool(h, pelvis);
   }
+}
+
+// Hoạt ảnh ngồi được làm cho ghế tựa: hông nằm lùi sau và cao hơn ghế nhựa lùn.
+// Đo vị trí xương hông sau khi vào tư thế rồi dịch cả người để hông nằm ngay trên tâm ghế.
+const SEAT_H = (0.44 + 0.07) * U; // mặt ghế nhựa đẩu 0.44m + bề dày mông tới khớp hông
+function seatOnStool(h, pelvis) {
+  const v = new T.Vector3();
+  h.holder.updateMatrixWorld(true);
+  pelvis.getWorldPosition(v);
+  h.holder.worldToLocal(v);
+  h.root.position.x -= v.x;
+  h.root.position.z -= v.z + 0.02 * U; // pelvis đặt đúng tâm ghế, lùi nhẹ 2cm cho đùi đặt tự nhiên
+  h.root.position.y += SEAT_H - v.y;
 }
 
 // Cập nhật hoạt ảnh người ở gần; ẩn người ở xa (gọi trong vòng lặp)

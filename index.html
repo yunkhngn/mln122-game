@@ -1,85 +1,116 @@
 <!doctype html>
 <html lang="vi">
- <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Sáu Hòn Đảo</title>
-  <!-- Font có dấu tiếng Việt: biển hiệu (Oswald, Be Vietnam Pro, Pacifico), HUD giấy (IBM Plex Mono, Noto Serif) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;800&family=IBM+Plex+Mono:wght@400;600&family=Noto+Serif:wght@400;700&family=Oswald:wght@500;600;700&family=Pacifico&display=swap" />
-  <link rel="stylesheet" href="css/style.css" />
- </head>
- <body>
-  <div id="vig"></div>
 
-  <!-- Sổ ghi chép: nơi đang đứng + của cải -->
-  <section id="me" class="paper" aria-label="Sổ ghi chép">
-   <header class="strip"><span>Sổ ghi chép</span><span class="serial">Số 0026</span></header>
-   <p class="loc"><span class="lbl">Nơi đang đứng</span><b id="loc">Trên phố</b></p>
-   <dl class="ledger">
-    <div><dt>Vàng</dt><dd id="v-gold">0</dd></div>
-    <div><dt>Hạt giống</dt><dd id="v-seed">0</dd></div>
-    <div><dt>Lúa</dt><dd id="v-rice">0</dd></div>
-   </dl>
-  </section>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>MLN122 - Game bao cấp</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" sizes="192x192" href="apple-touch-icon.png" />
+    <!-- Font có dấu tiếng Việt: biển hiệu (Oswald, Be Vietnam Pro, Pacifico), HUD giấy (IBM Plex Mono, Noto Serif) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;800&family=IBM+Plex+Mono:wght@400;600&family=Noto+Serif:wght@400;700&family=Oswald:wght@500;600;700&family=Pacifico&display=swap" />
+    <link rel="stylesheet" href="css/style.css" />
+</head>
 
-  <!-- Bản đồ phường (Bắc ở trên) + bảng yết giá -->
-  <div id="rightcol">
-   <section id="mapcard" class="paper" aria-label="Bản đồ phường">
-    <header class="strip"><span>Bản đồ phường</span><span class="serial">Tỉ lệ 1:2000</span></header>
-    <canvas id="map" width="200" height="200"></canvas>
-   </section>
-   <section id="mk" class="paper" aria-label="Bảng yết giá">
-    <header class="band">Yết giá thu mua lúa</header>
-    <div class="pricerow"><b id="pr">20</b><span class="unit">vàng<br>một bao</span><span id="trend" class="trend">=</span></div>
-    <canvas id="sp" width="184" height="40"></canvas>
-    <p id="note" class="note"></p>
-   </section>
-  </div>
+<body>
+    <div id="vig"></div>
 
-  <!-- Phiếu tem: 6 khu, khu xong được đóng dấu -->
-  <section id="gl" class="paper" aria-label="Phiếu tem tri thức">
-   <header class="strip"><span>Phiếu tem tri thức</span><span class="serial" id="v-done">0/6</span></header>
-   <div class="stamps" id="stamps"></div>
-   <p class="task" id="task"><span class="box"></span><span>Tìm rương vàng trên giàn giáo công trường</span></p>
-  </section>
+    <!-- Sổ ghi chép: nơi đang đứng + của cải -->
+    <section id="me" class="paper" aria-label="Sổ ghi chép">
+        <header class="strip"><span>Sổ ghi chép</span><span class="serial">Số 0026</span></header>
+        <p class="loc"><span class="lbl">Nơi đang đứng</span><b id="loc">Trên phố</b></p>
+        <dl class="ledger">
+            <div>
+                <dt>Vàng</dt>
+                <dd id="v-gold">0</dd>
+            </div>
+            <div>
+                <dt>Hạt giống</dt>
+                <dd id="v-seed">0</dd>
+            </div>
+            <div>
+                <dt>Lúa</dt>
+                <dd id="v-rice">0</dd>
+            </div>
+        </dl>
+    </section>
 
-  <!-- Hướng dẫn phím -->
-  <section id="ct" class="paper" aria-label="Hướng dẫn">
-   <header class="strip"><span>Hướng dẫn</span></header>
-   <ul class="keys">
-    <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> đi · <kbd>Shift</kbd> chạy</li>
-    <li><kbd>Space</kbd> nhảy · chuột nhìn quanh</li>
-    <li><kbd>E</kbd> tương tác · <kbd>B</kbd> mua hạt</li>
-    <li><kbd>G</kbd> đồ họa · <kbd>P</kbd> hiệu năng · <kbd>Esc</kbd> nhả chuột</li>
-   </ul>
-  </section>
+    <!-- Bản đồ phường (Bắc ở trên) + bảng yết giá -->
+    <div id="rightcol">
+        <section id="mapcard" class="paper" aria-label="Bản đồ phường">
+            <header class="strip"><span>Bản đồ phường</span><span class="serial">1:2000</span></header>
+            <canvas id="map" width="150" height="150"></canvas>
+        </section>
+        <section id="mk" class="paper" aria-label="Bảng yết giá">
+            <header class="band">Yết giá thu mua lúa</header>
+            <div class="pricerow"><b id="pr">20</b><span class="unit">vàng<br>một bao</span><span id="trend"
+                    class="trend">=</span></div>
+            <canvas id="sp" width="150" height="32"></canvas>
+            <p id="note" class="note"></p>
+        </section>
+    </div>
 
-  <div id="hint"></div><div id="toast"></div><div id="ib"></div><div id="qz"></div>
-  <div id="cross"></div>
-  <div id="lock"><div class="paper ticket"><b>Nhấp chuột để vào phố</b><small>Esc để nhả chuột</small></div></div>
-  <div id="gfx"></div>
-  <div id="perf"></div>
-  <div id="load"><div class="paper"><header class="band">Đang tải phố phường</header><div class="lb"><i id="loadbar"></i></div><p id="loadmsg">Ảnh chụp vật liệu, đồ đạc và người (khoảng 25 MB)</p></div></div>
+    <!-- Phiếu tem: 6 khu, khu xong được đóng dấu -->
+    <section id="gl" class="paper" aria-label="Phiếu tem tri thức">
+        <header class="strip"><span>Phiếu tem tri thức</span><span class="serial" id="v-done">0/6</span></header>
+        <div class="stamps" id="stamps"></div>
+        <p class="task" id="task"><span class="box"></span><span>Tìm rương vàng trên giàn giáo công trường</span></p>
+    </section>
 
-  <!-- Three.js r128 (bản gốc dùng CDN r128; ở đây đóng gói sẵn để chạy offline) -->
-  <script src="vendor/three.min.js"></script>
-  <script src="vendor/GLTFLoader.js"></script>
-  <script src="vendor/SkeletonUtils.js"></script>
-  <!-- Thứ tự tải quan trọng: mỗi file dùng biến toàn cục của file trước -->
-  <script src="js/config.js"></script>
-  <script src="js/engine.js"></script>
-  <script src="js/textures.js"></script>
-  <script src="js/assets.js"></script>
-  <script src="js/materials.js"></script>
-  <script src="js/characters.js"></script>
-  <script src="js/props.js"></script>
-  <script src="js/world.js"></script>
-  <script src="js/data.js"></script>
-  <script src="js/state.js"></script>
-  <script src="js/player.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/main.js"></script>
- </body>
+    <!-- Hướng dẫn phím -->
+    <section id="ct" class="paper" aria-label="Hướng dẫn">
+        <header class="strip"><span>Hướng dẫn</span></header>
+        <ul class="keys">
+            <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> đi · <kbd>Shift</kbd> chạy</li>
+            <li><kbd>Space</kbd> nhảy · chuột nhìn quanh</li>
+            <li><kbd>E</kbd> tương tác · <kbd>B</kbd> mua hạt</li>
+            <li><kbd>G</kbd> đồ họa · <kbd>P</kbd> hiệu năng · <kbd>Esc</kbd> nhả chuột</li>
+            <li><kbd>H</kbd> ẩn/hiện bảng này</li>
+        </ul>
+    </section>
+
+    <div id="hint"></div>
+    <div id="toast"></div>
+    <div id="ib"></div>
+    <div id="qz"></div>
+    <div id="cross"></div>
+    <div id="lock">
+        <div class="paper ticket"><b>Nhấp chuột để vào phố</b><small>Esc để nhả chuột · H xem hướng dẫn phím</small>
+        </div>
+    </div>
+    <div id="gfx"></div>
+    <div id="perf"></div>
+    <div id="load">
+        <div class="paper">
+            <header class="band">Đang tải phố phường</header>
+            <div class="lb"><i id="loadbar"></i></div>
+            <p id="loadmsg">Ảnh chụp vật liệu, đồ đạc và người (khoảng 25 MB)</p>
+        </div>
+    </div>
+
+    <!-- Three.js r128 (bản gốc dùng CDN r128; ở đây đóng gói sẵn để chạy offline) -->
+    <script src="vendor/three.min.js"></script>
+    <script src="vendor/GLTFLoader.js"></script>
+    <script src="vendor/SkeletonUtils.js"></script>
+    <!-- Thứ tự tải quan trọng: mỗi file dùng biến toàn cục của file trước -->
+    <script src="js/config.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/textures.js"></script>
+    <script src="js/assets.js"></script>
+    <script src="js/materials.js"></script>
+    <script src="js/characters.js"></script>
+    <script src="js/props.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
 </html>
