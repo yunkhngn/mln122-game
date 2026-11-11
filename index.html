@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="vi">
+ <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sáu Hòn Đảo</title>
+  <link rel="stylesheet" href="css/style.css" />
+ </head>
+ <body>
+  <div id="vig"></div>
+  <div id="me" class="p"></div>
+  <div id="mk" class="p"><b>Giá lúa mì</b><div id="pr" style="font-size:22px"></div><canvas id="sp" width="140" height="36"></canvas><div id="note" style="font-size:12px"></div></div>
+  <div id="gl" class="p"></div>
+  <div id="ct" class="p">Nhấp chuột để điều khiển · Chuột nhìn quanh · WASD di chuyển · Shift chạy · Space nhảy · ←/→ xoay · E tương tác · B mua hạt · G đồ họa · P hiệu năng · Esc nhả chuột / đóng hộp thoại</div>
+  <div id="hint"></div><div id="toast"></div><div id="ib"></div><div id="qz"></div>
+  <div id="cross"></div>
+  <div id="lock"><div>🖱️ <b>Nhấp chuột</b> để vào góc nhìn thứ nhất<br><small>Esc để nhả chuột</small></div></div>
+  <div id="gfx"></div>
+  <div id="perf"></div>
+
+  <!-- Three.js r128 (bản gốc dùng CDN r128; ở đây đóng gói sẵn để chạy offline) -->
+  <script src="vendor/three.min.js"></script>
+  <!-- Thứ tự tải quan trọng: mỗi file dùng biến toàn cục của file trước -->
+  <script src="js/config.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/textures.js"></script>
+  <script src="js/materials.js"></script>
+  <script src="js/characters.js"></script>
+  <script src="js/props.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+ </body>
+</html>
