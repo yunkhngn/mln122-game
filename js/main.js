@@ -63,25 +63,26 @@ function visualUpdate(dt, moving) {
     u.t += dt * 0.18;
     if (u.t > 1) u.t -= 1;
     const t = u.t;
-    s.position.set(u.x + Math.sin(t * 3 + u.k) * 0.6 + t * 3, u.y + t * 9, u.z + t * 1.5);
-    const sz = 1.4 + t * 4.5;
+    const k = u.small ? 0.35 : 1;
+    s.position.set(u.x + (Math.sin(t * 3 + u.k) * 0.6 + t * 3) * k, u.y + t * 9 * k, u.z + t * 1.5 * k);
+    const sz = (1.4 + t * 4.5) * k;
     s.scale.set(sz, sz, 1);
     s.material.opacity = Math.sin(t * Math.PI) * 0.55;
   }
   // mây trôi chậm
-  for (const c of CLOUDS) { c.position.x += c.userData.v * dt; if (c.position.x > 130) c.position.x = -130; }
+  for (const c of CLOUDS) { c.position.x += c.userData.v * dt; if (c.position.x > 260) c.position.x = -260; }
   // LOD: ẩn chi tiết nhỏ ở xa (4 lần/giây)
   lodT += dt;
   if (lodT > 0.25) {
     lodT = 0;
     const d2 = GFX.detail * GFX.detail;
     for (const m of DETAIL) { const dx = m.userData.cx - P.x, dz = m.userData.cz - P.z; m.visible = dx * dx + dz * dz < d2; }
+    updatePropLOD(false);
   }
   // người chơi (chỉ đổ bóng) – vung tay theo bước chân
   hero.armL.rotation.x = -hero.legL.rotation.x * 0.8;
   hero.armR.rotation.x = -hero.legR.rotation.x * 0.8;
-  vill.armL.rotation.x = -vill.legL.rotation.x * 0.8;
-  vill.armR.rotation.x = -vill.legR.rotation.x * 0.8;
+  updateHumans(dt);
 }
 
 function adapt(rawMs) {
@@ -135,6 +136,7 @@ function loop(now) {
   }
   vy -= 22 * dt;
   P.y += vy * dt;
+  collide();
   const g = groundAt(P.x, P.y, P.z);
   if (vy <= 0 && P.y <= g) {
     P.y = g;
@@ -146,7 +148,7 @@ function loop(now) {
     P.y = 0;
     P.z = 8;
     vy = 0;
-    say("Bạn rơi khỏi đảo! Quay lại điểm xuất phát.");
+    say("Bạn bị kẹt! Quay lại ngã tư.");
   }
   hero.position.set(P.x, P.y, P.z);
   const sw = l > 0 && onG ? Math.sin(tt * 12) * 0.7 : 0;
@@ -156,14 +158,8 @@ function loop(now) {
     P.x - merch.position.x,
     P.z - merch.position.z,
   );
-  vill.position.set(
-    -2 + Math.cos(tt * 0.3) * 5,
-    0,
-    -10 + Math.sin(tt * 0.3) * 5,
-  );
-  vill.rotation.y = -tt * 0.3 + Math.PI;
-  vill.legL.rotation.x = Math.sin(tt * 6) * 0.5;
-  vill.legR.rotation.x = -vill.legL.rotation.x;
+  vill.position.set(VILL_C.x + Math.cos(tt * 0.3) * 5, 0.2, VILL_C.z + Math.sin(tt * 0.3) * 5);
+  vill.rotation.y = -tt * 0.3;
   for (const f of floaters) {
     f.m.position.y = f.y0 + Math.sin(tt * f.s + f.p) * f.a;
     f.m.rotation.y += dt * f.r;

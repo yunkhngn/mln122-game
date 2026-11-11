@@ -1,7 +1,11 @@
-# Sáu Hòn Đảo – bản remaster góc nhìn thứ nhất (Three.js r128)
+# Sáu Hòn Đảo – bản phố phường góc nhìn thứ nhất (Three.js r128)
 
-Mở `index.html` bằng trình duyệt là chơi được, kể cả khi mở trực tiếp file (`file://`) và không có mạng.
-Nếu muốn chạy qua server: `npx serve .` hoặc `python -m http.server`, rồi mở `http://localhost:...`.
+Thế giới là **một phường phố Việt trên mặt đất** (không còn đảo bay): ngã tư ở giữa, 4 nhánh phố, 6 khu chủ đề
+(trường học, chợ, xưởng cơ khí, dãy quán "cạnh tranh", UBND phường, công trường), ruộng ven đô.
+Texture ảnh thật + đồ vật 3D CC0 từ Poly Haven, nhân vật 3D có khung xương + hoạt ảnh (Quaternius CC0), biển hiệu chữ Việt.
+
+**Cần chạy qua web server** (model GLTF không nạp được khi mở `file://`):
+`npx serve .` hoặc `python3 -m http.server`, rồi mở `http://localhost:...`. Deploy Vercel: đẩy nguyên thư mục lên (site tĩnh, không cần build).
 
 ## Điều khiển
 | Phím | Chức năng |
@@ -17,41 +21,43 @@ Nếu muốn chạy qua server: `npx serve .` hoặc `python -m http.server`, r�
 | Esc | Nhả chuột / đóng hộp thoại |
 
 ## Cấu trúc mã nguồn
-Các file là script thường (không phải ES module), nạp theo thứ tự trong `index.html`
-và dùng chung biến toàn cục, nên mở file trực tiếp vẫn chạy.
+Script thường (không phải ES module), nạp theo thứ tự trong `index.html`, dùng chung biến toàn cục.
 
 ```
-index.html          điểm vào (giữ nguyên tên)
-css/style.css       giao diện gốc + tâm ngắm, màn hình khóa chuột, bảng đồ họa
-vendor/three.min.js Three.js r128 (đúng phiên bản bản gốc dùng qua CDN)
-js/config.js        3 mức chất lượng + thông số góc nhìn thứ nhất (chiều cao mắt, FOV, độ nhạy)
-js/engine.js        renderer (sRGB, ACES tone mapping, PCF soft shadow), bầu trời, nắng, env map
-js/textures.js      texture vẽ bằng code: cỏ, đất, đá, gỗ, tường vôi, ngói, tôn, gạch vỉa hè, kính, biển hiệu chữ Việt, quốc kỳ
-js/materials.js     vật liệu PBR có cache, hàm dựng sb/sc/sm, gộp mesh tĩnh, hiệu ứng lá lay trong gió
-js/characters.js    nhân vật (tay, chân, mặt, nón lá); NPC đứng yên gộp thành 1 mesh
-js/props.js         nhà ống, nhà cấp 4 mái ngói, cột điện + dây điện, xe máy, ghế nhựa, sạp chợ
-js/world.js         6 đảo, cầu, chủ đề từng đảo, NPC, ruộng, rương, cây (InstancedMesh), lúa, cờ, khói
-js/data.js          câu hỏi (giữ nguyên)
-js/state.js         save game + kinh tế giá lúa (giữ nguyên)
-js/player.js        điều khiển FPS (Pointer Lock), vật lý, near/act/buy (logic gốc)
-js/ui.js            HUD, hỏi đáp (gốc), bảng đồ họa, bảng hiệu năng
-js/main.js          vòng lặp game (gốc) + cập nhật hình ảnh, LOD, độ phân giải động
+index.html             điểm vào + màn hình tải
+vendor/                three.min.js r128 + GLTFLoader r128
+assets/tex/            texture ảnh thật (diff / nor / arm), Poly Haven CC0
+assets/models/         model GLTF Poly Haven CC0 (ghế nhựa, cục nóng điều hòa, quạt trần, kệ sắt…)
+assets/people/         thân người + tóc + hoạt ảnh Quaternius CC0 (tạo bằng tools/build_people.py)
+assets/CREDITS.md      nguồn tài nguyên
+tools/fetch_assets.py  tải lại / thêm tài nguyên (cần Python + Pillow)
+js/config.js           3 mức chất lượng + thông số góc nhìn thứ nhất
+js/engine.js           renderer, bầu trời, nắng, env map
+js/textures.js         texture vẽ bằng code: biển hiệu phong hóa, lịch, thực đơn, tán lá, vệt bẩn
+js/assets.js           nạp texture ảnh thật (pbr) + model GLTF (prop/propL → InstancedMesh, tự ẩn khi xa)
+js/materials.js        bảng vật liệu MDEF, hiệu ứng tường bẩn (grime), gộp mesh tĩnh
+js/characters.js       nhân vật 3D Quaternius: person({...}) – tô áo/quần lên da, tóc, mũ cối/nón lá/mũ bảo hộ, hoạt ảnh đứng/nói/đi/ngồi ghế nhựa
+js/props.js            nhà ống (quán đi vào được), cột điện + dây, xe máy, cây, sạp chợ, va chạm SOLID
+js/world.js            bố cục phường, các khu chủ đề, NPC, ruộng, rương, cờ, khói
+js/data.js · state.js  câu hỏi + kinh tế giá lúa (logic gốc)
+js/player.js           điều khiển FPS, mặt đất + va chạm tường (SOLID), near/act/buy
+js/ui.js · main.js     HUD, hỏi đáp, bảng đồ họa, vòng lặp
 ```
 
 ### Chỉnh sửa nhanh
 - **Câu hỏi:** `js/data.js`.
-- **Chiều cao mắt, FOV, độ nhạy chuột, độ lắc đầu:** `FP` trong `js/config.js`.
-- **Màu, độ nhám, kích thước lặp texture:** `MDEF` trong `js/materials.js`; hoa văn nằm trong `GEN` ở `js/textures.js`.
-- **Thêm nhà ống:** `tubeHouse({ x, y, z, ry, floors, color, sign: ["TIÊU ĐỀ", "dòng phụ", "#nền", "#chữ"] })`.
-- **Thêm đồ trang trí tĩnh:** gọi `sb(...)` (hộp), `sc(...)` (trụ) hoặc `sm(geometry, ...)`. Các vật này được tự động gộp theo đảo.
-  Thêm `{ detail: true }` để vật tự ẩn khi người chơi ở xa.
-- **Vật chuyển động:** tạo `THREE.Mesh` thường và `scene.add(...)`. Đừng dùng `sb`/`sc`/`sm`, vì các mesh đó bị gộp và đứng yên.
+- **Thêm nhà ống:** `tubeHouse({ x, y, z, ry, floors, type: "pho" | "tea" | "grocery" | "moto" | "phone" | "barber" | "books" | "home" | "closed", sign: {title, sub, top, bg, fg, kind} })`.
+- **Thêm người:** `person({ female, shirt, pants, sleeve, shorts, print, hair: "short"|"buzz"|"long"|"bun", hat: "coi"|"non"|"cap"|"hard", pose: "stand"|"talk"|"walk"|"sit"|"eat"|"squat"|"fix"|"drive" })`.
+- **Thêm đồ vật GLTF:** khai báo trong `MODEL_DEF` (`js/assets.js`), tải bằng `tools/fetch_assets.py`, đặt bằng `prop(key, x, y, z, ry)`.
+- **Va chạm:** `solidW(x0, z0, x1, z1, top)` – hộp thấp (≤ 0.6 trên chân) đi lên được, cao hơn là tường.
 
 ## Phần giữ nguyên so với bản gốc
-- Vị trí, bán kính, độ cao của 6 đảo; 9 cây cầu; hàm `groundAt` (va chạm).
-- Tốc độ 7/11, lực nhảy 11, trọng lực 22, giới hạn dt 0.05 s, rơi xuống dưới y = -30 thì về (0, 0, 8).
-- Vị trí NPC, ruộng, quầy, rương; bán kính tương tác; logic `near`, `act`, `buy`.
-- Câu hỏi, giá lúa, sự kiện thị trường, save `localStorage` (khóa `dao-nong-trai`, save cũ vẫn đọc được).
+- Tốc độ 7/11, lực nhảy 11, trọng lực 22, giới hạn dt 0.05 s.
+- Logic `near`, `act`, `buy`, bán kính tương tác; câu hỏi, giá lúa, sự kiện thị trường, save `localStorage` (khóa `dao-nong-trai`).
+- **Đã đổi:** bản đồ (đảo → phường), `groundAt` (vỉa hè/sàn/bậc thang) + thêm va chạm tường, vị trí NPC/ruộng/quầy/rương.
+
+Đo nhanh bản phố phường (Chrome, Apple M2, mức Trung bình, quay camera liên tục): ~60 FPS, ~390 draw call, ~1 triệu tam giác.
+Số liệu bảng dưới là của bản đảo cũ.
 
 ## Hiệu năng (đo thật, có giới hạn)
 Đo trong Chrome headless, 1280×720. Máy test không có GPU nên WebGL chạy bằng **SwiftShader** (CPU giả lập GPU).

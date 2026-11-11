@@ -9,7 +9,7 @@
 function mulberry(a) { return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const rand = mulberry(20261111);
 const rr = (a, b) => a + (b - a) * rand();
-const pick = (arr) => arr[Math.floor(rand() * arr.length)];
+const pickR = (arr) => arr[Math.floor(rand() * arr.length)];
 
 // ---------- Va chạm: hộp AABB {x0,x1,z0,z1,top} ----------
 // Hộp có đỉnh thấp (≤ chân + 0.6) => đi lên được (vỉa hè, bậc thang). Cao hơn => tường chắn.
@@ -101,7 +101,7 @@ const STOOL_GEO = (() => {
   for (const s of [-1, 1]) { it.push({ g: BG(0.26 * U, 0.03 * U, 0.02 * U), m: mtx(0, h * 0.35, s * 0.135 * U) }); it.push({ g: BG(0.02 * U, 0.03 * U, 0.26 * U), m: mtx(s * 0.135 * U, h * 0.35, 0) }); }
   return mergeGeos(it);
 })();
-function stool(x, y, z, c, p) { sm(STOOL_GEO, M(c ?? pick([0xd9302f, 0x2f6ad9, 0xd9302f, 0x2a9a5a]), 0.5), x, y, z, { detail: true, ry: rand() * 1.5, p, shadow: true }); }
+function stool(x, y, z, c, p) { sm(STOOL_GEO, M(c ?? pickR([0xd9302f, 0x2f6ad9, 0xd9302f, 0x2a9a5a]), 0.5), x, y, z, { detail: true, ry: rand() * 1.5, p, shadow: true }); }
 // Bàn inox thấp
 function lowTable(x, y, z, p, ry = 0) {
   const G = new T.Group(); G.position.set(x, y, z); G.rotation.y = ry; G.userData.detail = true; (p || ST).add(G);
@@ -128,7 +128,7 @@ function shelfGoods(G, x, y0, z, w, rows, gap) {
     let gx = -w / 2 + 0.15;
     while (gx < w / 2 - 0.2) {
       const bw = rr(0.14, 0.32), bh = rr(0.18, 0.4);
-      sb(bw, bh, 0.28, pick([0xd9302f, 0x2f7ad9, 0xe0b030, 0x3a9a5a, 0xf2f2ea, 0xe07a2a, 0x8a3a9a]), x + gx + bw / 2, y0 + r * gap + bh / 2 + 0.06, z, { p: G, shadow: false, detail: true });
+      sb(bw, bh, 0.28, pickR([0xd9302f, 0x2f7ad9, 0xe0b030, 0x3a9a5a, 0xf2f2ea, 0xe07a2a, 0x8a3a9a]), x + gx + bw / 2, y0 + r * gap + bh / 2 + 0.06, z, { p: G, shadow: false, detail: true });
       gx += bw + 0.03;
     }
   }
@@ -141,11 +141,11 @@ const FLAG_GEO = (() => { // lá cờ hơi gợn sóng (tĩnh)
   for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setZ(i, Math.sin(x * 3.2) * 0.08 * (x + 0.75)); }
   g.translate(0.75, -0.5, 0); g.computeVertexNormals(); return g;
 })();
-function hangFlag(G, x, y, z, side = 1) {
-  const F = new T.Group(); F.position.set(x, y, z); F.rotation.set(0.75, side > 0 ? 0 : Math.PI, 0); G.add(F);
-  sc(0.025, 0.025, 2.2, M(0xd8d0c0, 0.5), 0, 0, 0, { p: F, seg: 5, shadow: false, rx: -Math.PI / 2 });
+function hangFlag(G, x, y, z) {
+  const F = new T.Group(); F.position.set(x, y, z); F.rotation.x = -0.75; G.add(F);
+  sb(0.04, 0.04, 2.2, M(0xd8d0c0, 0.5), 0, 0, 1.1, { p: F, shadow: false });
   const fm = new T.Mesh(FLAG_GEO, FLAG_MAT);
-  fm.position.set(0, -0.02, 1.4); fm.rotation.set(-Math.PI / 2, 0, -Math.PI / 2);
+  fm.position.set(0, 0, 0.6); fm.rotation.y = -Math.PI / 2;
   fm.castShadow = true; F.add(fm);
 }
 
@@ -162,7 +162,7 @@ function laundry(G, x, y, z, w) {
   sb(w, 0.015, 0.015, M(0x222222), x, y, z, { p: G, shadow: false, detail: true });
   for (let k = 0; k < Math.floor(w / 0.55); k++) {
     const cw = rr(0.35, 0.5), ch = rr(0.45, 0.8);
-    sb(cw, ch, 0.02, pick([0xe8e0d0, 0x3a5a9a, 0xd04a3a, 0xf0c040, 0x5a9a6a, 0xf4f4f4, 0xc06a9a]), x - w / 2 + 0.35 + k * 0.55, y - ch / 2, z, { p: G, detail: true, shadow: false });
+    sb(cw, ch, 0.02, pickR([0xe8e0d0, 0x3a5a9a, 0xd04a3a, 0xf0c040, 0x5a9a6a, 0xf4f4f4, 0xc06a9a]), x - w / 2 + 0.35 + k * 0.55, y - ch / 2, z, { p: G, detail: true, shadow: false });
   }
 }
 
@@ -175,10 +175,10 @@ function tubeHouse(o) {
   const w = o.w || rr(4, 5) * U, d = o.d || 20, F = o.floors || 3, H = GF + (F - 1) * UF, zf = d / 2;
   const type = o.type || "home", open = type != "closed";
   const G = localGroup(o.x, o.y || 0, o.z, o.ry || 0);
-  const color = o.color ?? pick(FACADE);
-  const wallKey = o.wall || pick(["plaster", "plaster", "plaster", "plaster_y", "peel", "plaster_b"]);
+  const color = o.color ?? pickR(FACADE);
+  const wallKey = o.wall || pickR(["plaster", "plaster", "plaster", "plaster_y", "peel", "plaster_b"]);
   const wall = mat(wallKey, wallKey == "plaster" || wallKey == "peel" ? color : 0xffffff);
-  const inner = mat("plaster", pick([0xf4f0e6, 0xe8f0e8, 0xf0e8d8, 0xdfe8f0]), { grime: false });
+  const inner = mat("plaster", pickR([0xf4f0e6, 0xe8f0e8, 0xf0e8d8, 0xdfe8f0]), { grime: false });
   // khối tầng trên + phần sau tầng trệt
   sb(w, H - GF, d, wall, 0, GF + (H - GF) / 2, 0, { p: G });
   sb(w, GF, d - ID, wall, 0, GF / 2, -ID / 2, { p: G });
@@ -186,17 +186,17 @@ function tubeHouse(o) {
   sb(w + 0.04, 0.4, 0.3, mat("concrete2", 0xd8d2c4), 0, GF + 0.05, zf + 0.1, { p: G }); // đà ngang
   sb(w, 0.25, 0.4, mat("concrete", 0x9a958c), 0, 0.12, zf + 0.15, { p: G, shadow: false }); // bậc thềm
   solidL(G, -w / 2, -zf, w / 2, zf - ID, H);             // khối sau
-  for (const s of [-1, 1]) solidL(G, s * w / 2 - 0.3, zf - ID, s * w / 2 + 0.0, zf, GF); // tường bên
+  for (const s of [-1, 1]) solidL(G, s > 0 ? w / 2 - 0.3 : -w / 2, zf - ID, s > 0 ? w / 2 : -w / 2 + 0.3, zf, GF); // tường bên
   solidL(G, -w / 2 + 0.3, zf - ID, w / 2 - 0.3, zf + 0.35, 0.25); // sàn quán (bước lên được)
 
   if (!open) {
     // cửa cuốn đóng
-    sb(w - 0.6, GF - 0.6, 0.12, mat("shutter", pick([0xffffff, 0xc8d8e8, 0xd8e8d0])), 0, (GF - 0.6) / 2 + 0.2, zf - 0.2, { p: G });
+    sb(w - 0.6, GF - 0.6, 0.12, mat("shutter", pickR([0xffffff, 0xc8d8e8, 0xd8e8d0])), 0, (GF - 0.6) / 2 + 0.2, zf - 0.2, { p: G });
     sb(w - 0.4, 0.6, 0.6, mat("shutter2", 0xb8c0c8), 0, GF - 0.35, zf - 0.15, { p: G });
     solidL(G, -w / 2, zf - ID, w / 2, zf - 0.1, GF);
   } else {
     // nội thất tầng trệt: sàn gạch, trần trắng, tường trong, hộp cửa cuốn cuộn lên
-    sb(w - 0.6, 0.06, ID, mat(pick(["tile", "tile2", "terrazzo"])), 0, 0.27, zf - ID / 2, { p: G, shadow: false });
+    sb(w - 0.6, 0.06, ID, mat(pickR(["tile", "tile2", "terrazzo"])), 0, 0.27, zf - ID / 2, { p: G, shadow: false });
     sb(w - 0.6, 0.05, ID, mat("plaster", 0xf6f4ee, { grime: false }), 0, GF - 0.03, zf - ID / 2, { p: G, shadow: false });
     sb(w - 0.6, GF, 0.05, inner, 0, GF / 2, zf - ID + 0.03, { p: G, shadow: false });
     for (const s of [-1, 1]) sb(0.04, GF - 0.3, ID - 0.1, inner, s * (w / 2 - 0.32), GF / 2, zf - ID / 2, { p: G, shadow: false });
@@ -223,11 +223,11 @@ function tubeHouse(o) {
   // mái hiên tôn / bạt che trước cửa
   if (open && rand() < 0.55) {
     const tarp = rand() < 0.5;
-    sb(w - 0.2, 0.05, 2.6, tarp ? M(pick([0x2f6ad9, 0xd9302f, 0x3a9a5a, 0xe8a020]), 0.8) : mat("tin_rust", 0xc8c0b0), 0, GF - 0.9, zf + 1.3, { p: G, rx: 0.28 });
+    sb(w - 0.2, 0.05, 2.6, tarp ? M(pickR([0x2f6ad9, 0xd9302f, 0x3a9a5a, 0xe8a020]), 0.8) : mat("tin_rust", 0xc8c0b0), 0, GF - 0.9, zf + 1.3, { p: G, rx: 0.28 });
   }
   // các tầng trên
   for (let f = 1; f < F; f++) {
-    const y0 = GF + (f - 1) * UF, style = (o.idx + f) % 4;
+    const y0 = GF + (f - 1) * UF, style = ((o.idx || 0) + f + (o.styleOff || 0)) % 4;
     if (style == 0 || style == 1) { // ban công + lan can + cửa kính
       sb(w, 0.22, 1.5, mat("concrete2", 0xd8d4cc), 0, y0 + 0.11, zf + 0.75, { p: G });
       const D = subGroup(G);
@@ -244,13 +244,13 @@ function tubeHouse(o) {
       if (rand() < 0.5) propL(G, "plant", 0.6, y0 + 0.75, zf + 0.35, 0, 0.8);
       propL(G, rand() < 0.5 ? "aircon" : "aircon_r", w / 2 - 0.8, y0 + 3.3, zf + 0.35, 0, 1);
     } else { // cửa chớp gỗ xanh + gờ cửa sổ
-      for (const s of [-1, 1]) sb(w * 0.22, 2.6, 0.08, M(pick([0x4f8a5a, 0x3a6a8a, 0x6a4a2a]), 0.7), s * w * 0.13, y0 + 1.9, zf + 0.05, { p: G });
+      for (const s of [-1, 1]) sb(w * 0.22, 2.6, 0.08, M(pickR([0x4f8a5a, 0x3a6a8a, 0x6a4a2a]), 0.7), s * w * 0.13, y0 + 1.9, zf + 0.05, { p: G });
       sb(w * 0.55, 0.15, 0.35, mat("concrete2"), 0, y0 + 0.55, zf + 0.15, { p: G });
       sb(w * 0.6, 0.12, 0.5, mat("concrete2"), 0, y0 + 3.4, zf + 0.25, { p: G });
       if (rand() < 0.5) propL(G, "aircon_r", -w / 2 + 0.8, y0 + 3.6, zf + 0.35, 0, 1);
     }
   }
-  if (o.flag || rand() < 0.3) hangFlag(G, w / 2 - 0.4, GF + 0.6, zf + 0.2, 1);
+  if (o.flag || rand() < 0.3) hangFlag(G, w / 2 - 0.4, GF + 0.6, zf + 0.2);
   // tường chắn mái + mái tôn / bồn nước inox / tum thang
   for (const s of [-1, 1]) sb(0.18, 0.9, d, wall, s * (w / 2 - 0.09), H + 0.45, 0, { p: G });
   sb(w, 0.9, 0.18, wall, 0, H + 0.45, zf - 0.09, { p: G });
@@ -264,7 +264,7 @@ function tubeHouse(o) {
     for (const sx of [-0.7, 0.7]) sb(0.08, 0.6, 0.9, RAIL, w * 0.15 + sx, H + 3.1, -zf + 4.5, { p: G, shadow: false });
   }
   G.attach = worldPoint(G, w / 2 - 0.4, GF + 0.6, zf + 0.4); // điểm mắc dây điện
-  G.front = worldPoint(G, 0, 0, zf + 2.4);
+  G.front = worldPoint(G, 0, 0, zf + 1.9);
   G.w = w;
   return G;
 }
@@ -279,7 +279,18 @@ function interior(G, type, w, zf, i) {
     sb(1.7, 0.08, 0.9, INOX, -w / 2 + 1.3, y + 1.44, zf - 0.8, { p: G });
     sc(0.35, 0.4, 0.5, M(0x2a2a2a, 0.6), -w / 2 + 1.0, y, zf + 0.3, { p: G, seg: 10 }); // bếp than
     propL(G, "pot", -w / 2 + 1.0, y + 0.5, zf + 0.3, rand());
-    for (let k = 0; k < 2; k++) { lowTable(0.4, y, zm - 0.8 + k * 2.2, D); for (const s of [-1, 1]) stool(0.4 + s * 0.85, y, zm - 0.8 + k * 2.2, null, D); }
+    for (let k = 0; k < 2; k++) {
+      const tz = zm - 0.8 + k * 2.2;
+      lowTable(0.4, y, tz, D);
+      for (const s of [-1, 1]) {
+        stool(0.4 + s * 0.85, y, tz, null, D);
+        if (rand() < 0.55) { // khách đang ăn phở
+          const pp = randomPerson(Math.floor(rand() * 50), { pose: "eat", still: true, parent: D });
+          pp.position.set(0.4 + s * 0.85, y, tz); pp.rotation.y = s > 0 ? -Math.PI / 2 : Math.PI / 2;
+          phoBowl(0.4 + s * 0.28, y + 0.55 * U + 0.02, tz, D);
+        }
+      }
+    }
     altar(G, w / 2 - 1.1, y + 2.1, zb - 0.25);
     sb(0.8, 1.2, 0.03, paperMat("menu", "THỰC ĐƠN"), -w / 2 + 1.2, 2.6, zb - 0.55, { p: G, shadow: false });
   } else if (type == "tea") {
@@ -320,7 +331,7 @@ function interior(G, type, w, zf, i) {
     shelfGoods(G, 0, y + 0.9, zf - 1.4, 1.4, 1, 0.5);
   } else if (type == "tailor") {
     sb(2.2, 0.9, 1.0, M(0x6a4a2a, 0.7), 0, y + 0.45, zm, { p: G });
-    for (let k = 0; k < 4; k++) sb(0.5, 1.4, 0.3, pick([0xd04a6a, 0xf0f0f0, 0x3a5a9a, 0xe8c040]), -w / 2 + 0.9 + k * 0.6, y + 1.4, zb, { p: G, detail: true });
+    for (let k = 0; k < 4; k++) sb(0.5, 1.4, 0.3, pickR([0xd04a6a, 0xf0f0f0, 0x3a5a9a, 0xe8c040]), -w / 2 + 0.9 + k * 0.6, y + 1.4, zb, { p: G, detail: true });
     propL(G, "wstool", 0.3, y, zm + 0.9, 0);
   } else if (type == "pharmacy") {
     sb(iw, 1.1, 0.6, mat("glass", 0xf0f8ff), 0, y + 0.55, zm, { p: G });
@@ -343,7 +354,8 @@ function pole(x, y, z, h = 8 * U, ry = 0) {
   sb(2.0, 0.14, 0.14, M(0x4a4640, 0.6, 0.3), 0, h - 0.5, 0, { p: G });
   sb(1.4, 0.12, 0.12, M(0x4a4640, 0.6, 0.3), 0, h - 1.4, 0, { p: G });
   for (const sx of [-0.85, 0, 0.85]) sc(0.05, 0.07, 0.2, M(0xe8e8e0, 0.3), sx, h - 0.44, 0, { p: G, seg: 6, shadow: false });
-  propL(G, "pbox", 0.0, h - 3.2, 0.3, 0, 1.3);
+  sb(0.6, 0.8, 0.3, mat("rust", 0x9aa4a8), 0, h - 2.8, 0.32, { p: G }); // hộp công tơ
+  sb(0.5, 0.06, 0.4, M(0x3a3a3a, 0.6), 0, h - 2.37, 0.32, { p: G, shadow: false });
   if (rand() < 0.6) sb(0.5, 0.7, 0.05, signMat({ title: "KHOAN CẮT BÊ TÔNG", sub: "09xx.xxx.xxx", bg: "#ffe14a", fg: "#c8231f", kind: "plain", ar: 0.7 }), 0, 2.4, 0.28, { p: G, shadow: false, detail: true });
   // điểm mắc dây: 3 sứ trên + 4 điểm cáp viễn thông thấp
   return [[-0.85, h - 0.36], [0, h - 0.36], [0.85, h - 0.36], [0.2, h - 1.3], [-0.2, h - 1.35], [0.25, h - 2.2], [-0.25, h - 2.3], [0, h - 2.6]].map(([sx, sy]) => worldPoint(G, sx, sy, 0));
@@ -384,7 +396,7 @@ const WHEEL_GEO = (() => { const g = new T.TorusGeometry(0.26, 0.075, 8, 18); g.
 const RIM_GEO = (() => { const g = new T.CylinderGeometry(0.19, 0.19, 0.05, 12); g.rotateZ(Math.PI / 2); return g; })();
 function motorbike(x, y, z, ry, color, p) {
   const G = new T.Group(); G.position.set(x, y, z); G.rotation.y = ry; G.userData.detail = true; G.scale.setScalar(U); (p || ST).add(G);
-  color = color ?? pick([0xb0202a, 0x1a1a1a, 0x24467a, 0xe8e8e8, 0x8a8e94, 0x6a1a1a, 0x2a5a3a]);
+  color = color ?? pickR([0xb0202a, 0x1a1a1a, 0x24467a, 0xe8e8e8, 0x8a8e94, 0x6a1a1a, 0x2a5a3a]);
   const c = M(color, 0.35, 0.3), blk = M(0x161616, 0.8), chrome = M(0xb8bcc0, 0.25, 0.9);
   for (const wz of [-0.62, 0.62]) { sm(WHEEL_GEO, blk, 0, 0.34, wz, { p: G }); sm(RIM_GEO, chrome, 0, 0.34, wz, { p: G, shadow: false }); }
   sb(0.08, 0.05, 0.5, chrome, 0.1, 0.3, -0.42, { p: G, shadow: false });                 // ống xả
@@ -501,6 +513,10 @@ function stall(x, y, z, ry, tarp, label, goods) {
   }
   propL(G, "crate", -wd / 2 + 0.3, 0, dp / 2 + 0.3, 0.3);
   stool(wd / 2 - 0.3, 0, -dp / 2 - 0.5, null, D);
+  if (rand() < 0.75) { // người bán ngồi ghế nhựa sau sạp
+    const sl = person({ female: true, hair: "bun", hat: "non", skin: Math.floor(rand() * 2), shirt: pickR(["#c86a8a", "#5a7aa8", "#8a5a3a", "#e8e0d0", "#6a8a4a"]), sleeve: "long", pants: pickR(["#2a2a30", "#3a2a2a", "#2a3a2a"]), pose: rand() < 0.5 ? "squat" : "sit", still: true, parent: D });
+    sl.position.set(wd / 2 - 0.3, 0, -dp / 2 - 0.5);
+  }
   solidL(G, -wd / 2, -dp / 2, wd / 2, dp / 2, h + 0.1);
   return G;
 }

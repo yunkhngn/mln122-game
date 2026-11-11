@@ -4,7 +4,7 @@
 //  logic tương tác (near / act / buy) giữ nguyên bản gốc.
 // ============================================================
 const keys = {};
-let yaw = -1.0,   // hướng nhìn ban đầu: về phía khu chợ và dãy nhà ống
+let yaw = -1.0,   // hướng nhìn ban đầu: về phía chợ (góc đông bắc ngã tư)
   pitch = -0.05,
   drag = false;
 const P = { x: 0, y: 0, z: 8 };
@@ -57,22 +57,31 @@ addEventListener("pointermove", (e) => {
   pitch = Math.max(-1.45, Math.min(1.45, pitch));
 });
 
+// Mặt đất: nền phường y=0 + các hộp đi lên được (vỉa hè, sàn quán, bậc thang) có đỉnh ≤ chân + 0.6
 const groundAt = (x, y, z) => {
-  let g = -1e9;
-  for (const i of isl) {
-    const dx = x - i.x,
-      dz = z - i.z;
-    if (dx * dx + dz * dz < i.r * i.r && i.y <= y + 0.6) g = Math.max(g, i.y);
-  }
-  for (const b of bridges) {
-    const rx = x - b.sx, rz = z - b.sz, t = rx * b.ux + rz * b.uz, pp = rx * b.uz - rz * b.ux;
-    if (t >= 0 && t <= b.len && Math.abs(pp) < b.w) {
-      const h = b.ya + ((b.yb - b.ya) * t) / b.len;
-      if (h <= y + 0.6) g = Math.max(g, h);
-    }
+  let g = 0;
+  for (const b of SOLID) {
+    if (x < b.x0 || x > b.x1 || z < b.z0 || z > b.z1) continue;
+    if (b.top <= y + 0.6 && b.top > g) g = b.top;
   }
   return g;
 };
+// Va chạm tường: đẩy người chơi (hình tròn bán kính PR_R) ra khỏi hộp cao hơn tầm bước
+const PR_R = 0.42, HEAD = 2.7;
+function collide() {
+  for (let pass = 0; pass < 2; pass++)
+    for (const b of SOLID) {
+      if (b.top <= P.y + 0.6 || (b.bot ?? -1) >= P.y + HEAD) continue;
+      const cx = Math.max(b.x0, Math.min(P.x, b.x1)), cz = Math.max(b.z0, Math.min(P.z, b.z1));
+      const dx = P.x - cx, dz = P.z - cz, d2 = dx * dx + dz * dz;
+      if (d2 >= PR_R * PR_R) continue;
+      if (d2 > 1e-8) { const d = Math.sqrt(d2), k = (PR_R - d) / d; P.x += dx * k; P.z += dz * k; }
+      else { // tâm nằm trong hộp: đẩy ra mép gần nhất
+        const l = P.x - b.x0, r = b.x1 - P.x, n = P.z - b.z0, f = b.z1 - P.z, m = Math.min(l, r, n, f);
+        if (m == l) P.x = b.x0 - PR_R; else if (m == r) P.x = b.x1 + PR_R; else if (m == n) P.z = b.z0 - PR_R; else P.z = b.z1 + PR_R;
+      }
+    }
+}
 
 function near() {
   const c = plots.map((p) => ({
@@ -83,7 +92,7 @@ function near() {
     z: p.z,
     r: 2.2,
   }));
-  c.push({ type: "shop", x: SH.x, y: 0, z: SH.z, r: 4 });
+  c.push({ type: "shop", x: SH.x, y: 0.2, z: SH.z, r: 4 });
   npcs.forEach((n, id) => c.push({ type: "quiz", id, x: n.x, y: n.y, z: n.z, r: 4 }));
   if (!S.chest) c.push({ type: "chest", x: CH.x, y: CH.y, z: CH.z, r: 3 });
   let b = null,
@@ -132,7 +141,7 @@ function act() {
     S.chest = 1;
     S.gold += 150;
     chest.visible = false;
-    say("Mở rương trên đảo cao: +150 vàng!");
+    say("Mở rương trên giàn giáo công trường: +150 vàng!");
   }
 }
 function buy() {

@@ -38,37 +38,37 @@ function pbr(key) {
 // ---------- Model GLTF ----------
 // h: chiều cao mong muốn (mét) – chuẩn hóa model có tỉ lệ lạ; s: hệ số phóng; node: chỉ lấy các node có tên này
 const MODEL_DEF = {
-  chair:      { file: "plastic_monobloc_chair_01", h: 0.82 },
-  crate:      { file: "plastic_crate_02" },
-  aircon:     { file: "exterior_aircon_unit", node: ["exterior_aircon_unit"] },
-  aircon_r:   { file: "exterior_aircon_unit", node: ["exterior_aircon_unit_rusted"] },
-  fan:        { file: "ceiling_fan", s: 0.8, top: true },
-  tube:       { file: "mounted_fluorescent_lights", node: ["mounted_fluorescent_lights_a"], s: 1.3, top: true },
-  gas:        { file: "propane_tank", s: 0.85 },
-  ubox:       { file: "utility_box_01" },
-  pbox:       { file: "power_box_01" },
-  shelf:      { file: "steel_frame_shelves_01", h: 1.9 },
-  mstool:     { file: "metal_stool_02" },
-  wstool:     { file: "painted_wooden_stool", s: 0.8 },
-  desk:       { file: "SchoolDesk_01" },
-  schair:     { file: "SchoolChair_01", s: 0.92 },
-  chalk:      { file: "standing_chalkboard_01" },
-  bookshelf:  { file: "wooden_bookshelf_worn" },
-  toolcart:   { file: "tool_cart" },
-  handtruck:  { file: "hand_truck" },
-  tyre:       { file: "old_tyre", s: 0.9 },
-  cement:     { file: "cement_bag" },
-  basket:     { file: "wicker_basket_02", node: ["wicker_basket_02_base"], s: 2.2 },
-  pot:        { file: "pot_enamel_01", s: 2.6 },
-  trash:      { file: "trashbag" },
-  tv:         { file: "Television_01" },
-  plant:      { file: "planter_pot_clay", s: 1.6 },
-  jug:        { file: "plastic_bottle_gallon" },
-  jerry:      { file: "plastic_jerrycan" },
-  wcrate:     { file: "wooden_crate_01" },
-  drill:      { file: "drill_press_01" },
-  odesk:      { file: "metal_office_desk", s: 0.85 },
-  ladder:     { file: "wooden_ladder" },
+  chair:      { file: "plastic_monobloc_chair_01", lod: 40, h: 0.82 },
+  crate:      { file: "plastic_crate_02", lod: 30 },
+  aircon:     { file: "exterior_aircon_unit", lod: 45, node: ["exterior_aircon_unit"] },
+  aircon_r:   { file: "exterior_aircon_unit", lod: 45, node: ["exterior_aircon_unit_rusted"] },
+  fan:        { file: "ceiling_fan", lod: 28, s: 0.8, top: true },
+  tube:       { file: "mounted_fluorescent_lights", lod: 30, node: ["mounted_fluorescent_lights_a"], s: 1.3, top: true },
+  gas:        { file: "propane_tank", lod: 30, s: 0.85 },
+  ubox:       { file: "utility_box_01", lod: 50 },
+  pbox:       { file: "power_box_01", lod: 30 },
+  shelf:      { file: "steel_frame_shelves_01", lod: 45, h: 1.9 },
+  mstool:     { file: "metal_stool_02", lod: 30 },
+  wstool:     { file: "painted_wooden_stool", lod: 30, s: 0.8 },
+  desk:       { file: "SchoolDesk_01", lod: 45 },
+  schair:     { file: "SchoolChair_01", lod: 45, s: 0.92 },
+  chalk:      { file: "standing_chalkboard_01", lod: 60 },
+  bookshelf:  { file: "wooden_bookshelf_worn", lod: 50 },
+  toolcart:   { file: "tool_cart", lod: 40 },
+  handtruck:  { file: "hand_truck", lod: 35 },
+  tyre:       { file: "old_tyre", lod: 35, s: 0.9 },
+  cement:     { file: "cement_bag", lod: 45 },
+  basket:     { file: "wicker_basket_02", lod: 24, node: ["wicker_basket_02_base"], s: 2.2 },
+  pot:        { file: "pot_enamel_01", lod: 26, s: 2.6 },
+  trash:      { file: "trashbag", lod: 35 },
+  tv:         { file: "Television_01", lod: 26 },
+  plant:      { file: "planter_pot_clay", lod: 32, s: 1.6 },
+  jug:        { file: "plastic_bottle_gallon", lod: 20 },
+  jerry:      { file: "plastic_jerrycan", lod: 26 },
+  wcrate:     { file: "wooden_crate_01", lod: 40 },
+  drill:      { file: "drill_press_01", lod: 40 },
+  odesk:      { file: "metal_office_desk", lod: 40, s: 0.85 },
+  ladder:     { file: "wooden_ladder", lod: 45 },
 };
 // Danh sách vị trí đặt: key -> [{x,y,z,ry,s,far}]
 const PLACE = {};
@@ -123,7 +123,7 @@ function buildProp(key, root) {
     const m = o.material;
     m.envMapIntensity = 0.6;
     const im = new T.InstancedMesh(g, m, items.length);
-    im.castShadow = size.y * k > 0.6; im.receiveShadow = true;
+    im.castShadow = size.y * k > 1.2; im.receiveShadow = true;
     im.frustumCulled = false; // r128 không tính bounds theo instance
     scene.add(im);
     return im;
@@ -133,8 +133,9 @@ function buildProp(key, root) {
 // Ẩn vật nhỏ ở xa: dựng lại danh sách instance trong tầm nhìn (4 lần/giây)
 function updatePropLOD(all) {
   if (!PROPS_READY) return;
-  const d2 = GFX.detail * GFX.detail;
+  const q = GFX.detail / 80; // Thấp 0.56 · Trung bình 1 · Cao 1.75
   for (const pm of PROP_MESH) {
+    const L = (MODEL_DEF[pm.key].lod || 40) * q, d2 = L * L;
     let n = 0;
     for (let i = 0; i < pm.items.length; i++) {
       const p = pm.items[i], dx = p.x - P.x, dz = p.z - P.z;
